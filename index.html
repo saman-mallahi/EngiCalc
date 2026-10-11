@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EngiCalc — Math Studio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#101722; --panel:#182231; --panel2:#202d3e; --panel3:#2b3b50;
+  --border:#52647a; --text:#f3f7fc; --muted:#bdc9d8;
+  --accent:#4c9aff; --accent-dim:#1d3a63; --ok:#3fb950; --danger:#f85149;
+  --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+}
+html,body{height:100%}
+body{
+  background:radial-gradient(1200px 600px at 50% -200px,#16202e 0%,var(--bg) 60%);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  min-height:100vh;padding:18px;display:flex;justify-content:center;align-items:flex-start;
+  -webkit-font-smoothing:antialiased;
+}
+.app{width:100%;max-width:1100px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+h1{font-size:20px;font-weight:650;letter-spacing:.2px}
+h1 b{color:var(--accent);font-weight:650}
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--border);
+  padding:3px 10px;border-radius:20px;letter-spacing:.4px;text-transform:uppercase}
+.tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--panel);
+  padding:5px;border-radius:13px;border:1px solid var(--border);flex-wrap:wrap}
+.tab{flex:1;min-width:90px;padding:10px;border-radius:9px;background:transparent;border:none;
+  color:var(--muted);font-size:13px;font-weight:550;cursor:pointer;transition:.15s;
+  font-family:inherit}
+.tab:hover:not(.active){color:var(--text)}
+.tab.active{background:var(--panel3);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.35)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:14px;box-shadow:0 3px 12px rgba(0,0,0,.12)}
+.section-card{border:1px solid #60748c;background:linear-gradient(180deg,rgba(43,59,80,.42),rgba(24,34,49,.55));border-radius:13px;padding:13px;margin:14px 0}
+.section-title{font-size:13px;font-weight:700;letter-spacing:.35px;color:#e6f0ff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-title:before{content:"";width:4px;height:16px;background:var(--accent);border-radius:3px}
+.kbd-group{border:1px solid #52647a;background:rgba(13,21,33,.48);border-radius:10px;padding:9px;min-width:0}
+.kbd-group-title{font-size:10px;font-weight:750;letter-spacing:.8px;text-transform:uppercase;color:#c4d5e8;margin-bottom:8px}
+.kbd-keys{display:flex;flex-wrap:wrap;gap:5px}
+.cas-keyboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:10px 0 14px}
+.cas-keyboard .kbd-key{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:31px;font-size:12px;padding:6px 9px;background:#253448;border:1px solid #5c7189;border-radius:7px;color:#edf5ff;cursor:pointer;font-family:var(--mono);transition:.12s}
+.cas-keyboard .kbd-key:hover{color:#fff;background:#315176;border-color:#83b9ff;transform:translateY(-1px)}
+#tab-studio .display{border-color:#60748c;background:#131f2e}
+#tab-studio .hist{border-top:1px solid #60748c}
+.plot-controls{padding:10px;border:1px solid #52647a;background:rgba(13,21,33,.45);border-radius:10px}
+[hidden]{display:none!important}
+
+.display{background:var(--panel2);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;margin-bottom:12px;min-height:104px;display:flex;flex-direction:column;
+  justify-content:center;align-items:flex-end;gap:7px;overflow:hidden}
+#exprLine{font-family:var(--mono);font-size:23px;line-height:1.25;word-break:break-all;
+  text-align:right;width:100%;max-height:66px;overflow-y:auto;scrollbar-width:thin}
+#resultLine{font-family:var(--mono);font-size:17px;color:var(--accent);min-height:22px;
+  word-break:break-all;text-align:right;width:100%}
+#resultLine.err{color:var(--danger);font-size:14px}
+.modes{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.chip{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+  font-size:11.5px;padding:5px 11px;border-radius:20px;cursor:pointer;font-family:inherit;
+  transition:.15s;letter-spacing:.3px}
+.chip:hover{color:var(--text);border-color:#3b4859}
+.chip.on{background:var(--accent-dim);color:#a9cfff;border-color:#2f5e97}
+.pads{display:flex;gap:9px;align-items:stretch}
+.pad{display:grid;gap:7px}
+#sciPad{grid-template-columns:repeat(3,minmax(58px,1fr));flex:0 0 auto}
+#mainPad{grid-template-columns:repeat(4,1fr);flex:1}
+.btn{background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-size:14px;padding:13px 6px;cursor:pointer;font-family:inherit;
+  transition:.1s;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn:hover{background:var(--panel3);border-color:#3d4a5c}
+.btn:active{transform:scale(.96)}
+.btn.fn{color:#9fb6d0;font-size:13px}
+.btn.op{color:var(--accent);font-size:17px;font-weight:500}
+.btn.num{font-size:17px;font-family:var(--mono);font-weight:500}
+.btn.eq{background:linear-gradient(180deg,#5aa4ff,#3d86e8);color:#06111f;font-weight:700;
+  border-color:#5aa4ff;font-size:19px}
+.btn.eq:hover{background:linear-gradient(180deg,#6cb0ff,#4a91f0)}
+.btn.warn{color:#ffb0ab}
+.btn.span4{grid-column:span 4}
+.hist{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}
+.hist h3{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:7px;font-weight:600}
+#histList{display:flex;flex-direction:column;gap:3px;max-height:110px;overflow-y:auto;
+  scrollbar-width:thin}
+.hrow{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);
+  font-size:12.5px;padding:5px 9px;border-radius:7px;cursor:pointer;color:var(--muted)}
+.hrow:hover{background:var(--panel2);color:var(--text)}
+.hrow span:last-child{color:var(--accent);flex-shrink:0}
+.empty{font-size:12px;color:#5c6875;font-style:italic}
+
+.conv-top{display:flex;gap:9px;margin-bottom:11px;flex-wrap:wrap}
+.sel,.inp{background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);padding:11px 12px;font-size:14px;font-family:inherit;outline:none;
+  transition:.15s}
+.sel:focus,.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(76,154,255,.13)}
+.sel{cursor:pointer;min-width:0}
+#unitGroupSel{flex:1 1 170px}
+#catSel{flex:1 1 190px}
+#unitSearch{flex:1 1 150px}
+.conv-input{display:flex;gap:9px;margin-bottom:13px;flex-wrap:wrap}
+#convVal{flex:1 1 160px;font-family:var(--mono);font-size:19px;padding:13px 14px;font-weight:500}
+#fromUnit{flex:1 1 190px;font-size:14.5px}
+.conv-list{border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  max-height:430px;overflow-y:auto;scrollbar-width:thin;background:var(--panel2)}
+.crow{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:10px 14px;border-bottom:1px solid #1f2733;cursor:pointer;transition:.1s}
+.crow:last-child{border-bottom:none}
+.crow:hover{background:#212a37}
+.crow.sel{background:var(--accent-dim);border-color:#2b4d7a}
+.cname{font-size:13.5px;color:#c3cfdd;display:flex;align-items:baseline;gap:8px;
+  min-width:0;flex:1}
+.csym{font-family:var(--mono);font-size:11.5px;color:var(--muted);flex-shrink:0}
+.cval{font-family:var(--mono);font-size:14px;color:var(--accent);text-align:right;
+  word-break:break-all;flex-shrink:0;max-width:56%}
+.crow.sel .cval{color:#bcd9ff;font-weight:600}
+
+#casInput,#plotInput,#plot3Input{flex:1 1 320px;font-family:var(--mono);font-size:15px}
+#casVar,#plotVar,#plot3Var{flex:0 0 60px;font-family:var(--mono);text-align:center;font-size:15px}
+#casOutput{font-family:var(--mono);font-size:19px;color:var(--accent);
+  text-align:right;width:100%;word-break:break-all;line-height:1.35}
+#casOutput.err{color:var(--danger);font-size:14px}
+#casOutput sup{font-size:.68em;vertical-align:super;color:#d9e8ff}
+#casOutput .mathop{color:#9fb6d0}
+#casEcho{font-family:var(--mono);font-size:12.5px;color:var(--muted);
+  text-align:right;width:100%;word-break:break-all}
+#casHist{display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto;
+  scrollbar-width:thin}
+#casHint{font-size:11.5px;color:#5c6875;margin-top:8px;line-height:1.6}
+#casHint code{background:var(--panel2);padding:1px 6px;border-radius:4px;
+  font-family:var(--mono);font-size:11px;color:#9fb6d0}
+.examples{margin:10px 0;display:flex;gap:6px;flex-wrap:wrap}
+.ex{padding:5px 10px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:15px;color:var(--muted);font-size:11.5px;cursor:pointer;font-family:var(--mono)}
+.ex:hover{color:var(--accent);border-color:var(--accent)}
+
+#plotCanvas{width:1000px;height:500px;display:block}
+#plot3Canvas{width:1000px;height:560px;display:block}
+.plot-note{font-size:11.5px;color:#5c6875;margin-top:8px}
+#tab-studio{margin-bottom:14px}
+#tab-studio > .conv-top, #tab-studio > .examples, #tab-studio > .modes, #tab-studio > .display, #tab-studio > .hist{margin-bottom:14px}
+
+/* ===== Math Studio — two-column layout with sidebar keyboard ===== */
+.studio-layout{display:flex;gap:14px;align-items:flex-start}
+.studio-main{flex:1 1 auto;min-width:0}
+.studio-side{
+  flex:0 0 340px;
+  position:sticky;
+  top:18px;
+  align-self:flex-start;
+  max-height:calc(100vh - 36px);
+  overflow-y:auto;
+  scrollbar-width:thin;
+  padding-right:2px;
+}
+.studio-side .section-card{margin:0}
+.studio-side .section-card + .section-card{margin-top:10px}
+.studio-side .cas-keyboard{grid-template-columns:1fr;gap:8px;margin:0}
+.studio-side .kbd-group.keypad .kbd-keys{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+/* ===== Math Studio — solution box, keypad, tables ===== */
+.sol-box{border:1px solid #60748c;border-radius:13px;background:linear-gradient(180deg,rgba(43,59,80,.42),rgba(24,34,49,.55));padding:13px;margin:14px 0}
+.sol-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sol-title{font-size:13px;font-weight:700;letter-spacing:.35px;color:#e6f0ff;display:flex;align-items:center;gap:8px}
+.sol-title:before{content:"";width:4px;height:16px;background:var(--accent);border-radius:3px}
+.sol-status{font-size:11px;color:#9fb6d0;border:1px solid var(--border);border-radius:20px;padding:3px 10px;background:rgba(13,21,33,.5);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sol-status.ok{color:#8ef0a8;border-color:#2f6a3f}
+.sol-status.err{color:#ffb0ab;border-color:#7a3a37}
+.sol-status.busy{color:#ffd479;border-color:#7a6330}
+.sol-status.edit{color:#a9cfff;border-color:#2f5e97}
+.sol-actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.sol-plot{margin-top:12px;border:1px solid #52647a;border-radius:10px;background:#0d1521;padding:8px}
+#solutionCanvas{width:100%;height:auto;display:block;border-radius:8px;background:#0a0f16;touch-action:none;cursor:crosshair}
+#solutionCanvas.mode3d{cursor:grab}
+#solutionCanvas.mode3d:active{cursor:grabbing}
+.kbd-group.keypad .kbd-keys{display:grid;grid-template-columns:repeat(4,minmax(40px,1fr));gap:5px}
+.kbd-key.num{background:#2f4058;color:#fff;font-weight:650;font-family:var(--mono)}
+.kbd-key.act{background:#3a3320;color:#ffd479;border-color:#6b5b2f}
+.kbd-key.act:hover{background:#4a4029;border-color:#a8905a;color:#ffe6a8}
+.sol-table{border-collapse:collapse;font-size:13px;margin-top:6px}
+.sol-table th,.sol-table td{border:1px solid #52647a;padding:3px 14px;text-align:right;font-family:var(--mono)}
+.sol-table th{color:#cfe2ff;background:rgba(76,154,255,.12)}
+.sol-table td{color:#dfe9f5}
+/* ===== end added ===== */
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--accent);color:#06111f;padding:9px 20px;border-radius:24px;font-size:13px;
+  font-weight:650;opacity:0;pointer-events:none;transition:.25s;z-index:99}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:900px){
+  .studio-layout{flex-direction:column}
+  .studio-side{flex:1 1 auto;width:100%;position:static;max-height:none;overflow:visible}
+  .studio-side .cas-keyboard{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+}
+
+@media(max-width:700px){
+  body{padding:11px}
+  .pads{flex-direction:column}
+  #sciPad{grid-template-columns:repeat(3,1fr)}
+  #exprLine{font-size:20px}
+  .conv-list{max-height:340px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Engi<b>Calc</b> <span style="color:var(--muted);font-weight:400;font-size:14px">Engineering Calculator</span></h1>
+    <span class="badge">85+ Units · Symbolic Algebra · 2D/3D Graphs</span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="calc">Calculator</button>
+    <button class="tab" data-tab="conv">Converter</button>
+    <button class="tab" data-tab="studio">✦ Math Studio</button>
+  </div>
+
+  <!-- CALCULATOR -->
+  <section class="panel" id="tab-calc">
+    <div class="display">
+      <div id="exprLine">0</div>
+      <div id="resultLine"></div>
+    </div>
+    <div class="modes">
+      <button class="chip on" id="angleBtn">DEG</button>
+      <button class="chip on" data-calcmode="scientific">Scientific</button>
+      <button class="chip" data-calcmode="basic">Basic</button>
+      <button class="chip" data-calcmode="programmer">Programmer</button>
+      <button class="chip" data-calcmode="statistics">Statistics</button>
+      <button class="chip" id="clearHist">clear history</button>
+    </div>
+    <div class="pads">
+      <div class="pad" id="sciPad">
+        <button class="btn fn" data-ins="sin(">sin</button>
+        <button class="btn fn" data-ins="cos(">cos</button>
+        <button class="btn fn" data-ins="tan(">tan</button>
+        <button class="btn fn" data-ins="asin(">sin⁻¹</button>
+        <button class="btn fn" data-ins="acos(">cos⁻¹</button>
+        <button class="btn fn" data-ins="atan(">tan⁻¹</button>
+        <button class="btn fn" data-ins="ln(">ln</button>
+        <button class="btn fn" data-ins="log(">log</button>
+        <button class="btn fn" data-ins="log2(">log₂</button>
+        <button class="btn fn" data-ins="sqrt(">√</button>
+        <button class="btn fn" data-ins="cbrt(">∛</button>
+        <button class="btn fn" data-ins="^2">x²</button>
+        <button class="btn fn" data-ins="^">xʸ</button>
+        <button class="btn fn" data-ins="1/(">1/x</button>
+        <button class="btn fn" data-ins="!">x!</button>
+        <button class="btn fn" data-ins="π">π</button>
+        <button class="btn fn" data-ins="e">e</button>
+        <button class="btn fn" data-ins="abs(">|x|</button>
+        <button class="btn fn" data-ins="exp(">eˣ</button>
+        <button class="btn fn" data-ins="10^(">10ˣ</button>
+        <button class="btn fn" data-ins="mod(">mod</button>
+      </div>
+      <div class="pad" id="mainPad">
+        <button class="btn warn" data-act="clear">AC</button>
+        <button class="btn" data-act="back">⌫</button>
+        <button class="btn op" data-ins="(">(</button>
+        <button class="btn op" data-ins=")">)</button>
+        <button class="btn num" data-ins="7">7</button>
+        <button class="btn num" data-ins="8">8</button>
+        <button class="btn num" data-ins="9">9</button>
+        <button class="btn op" data-ins="/">÷</button>
+        <button class="btn num" data-ins="4">4</button>
+        <button class="btn num" data-ins="5">5</button>
+        <button class="btn num" data-ins="6">6</button>
+        <button class="btn op" data-ins="*">×</button>
+        <button class="btn num" data-ins="1">1</button>
+        <button class="btn num" data-ins="2">2</button>
+        <button class="btn num" data-ins="3">3</button>
+        <button class="btn op" data-ins="-">−</button>
+        <button class="btn num" data-ins="0">0</button>
+        <button class="btn num" data-ins=".">.</button>
+        <button class="btn op" data-ins="%">%</button>
+        <button class="btn op" data-ins="+">+</button>
+        <button class="btn eq span4" data-act="equals">=</button>
+      </div>
+    </div>
+    <div id="programmerPanel" class="panel" hidden style="margin-top:12px">
+      <h3 style="margin-bottom:8px">Programmer converter</h3>
+      <div class="conv-top"><input id="progValue" class="inp" value="255" placeholder="Integer or 0xFF"><select id="progBase" class="sel"><option value="10">Decimal</option><option value="2">Binary</option><option value="8">Octal</option><option value="16">Hexadecimal</option></select></div>
+      <div id="progResults" style="font-family:var(--mono);line-height:2;overflow-wrap:anywhere"></div>
+    </div>
+    <div id="statisticsPanel" class="panel" hidden style="margin-top:12px">
+      <h3 style="margin-bottom:8px">Statistics</h3>
+      <input id="statsValues" class="inp" style="width:100%" value="12, 15, 18, 18, 22" placeholder="Enter numbers separated by commas or spaces">
+      <div id="statsResults" style="margin-top:8px;line-height:1.8"></div>
+    </div>
+    <div class="hist">
+      <h3>History</h3>
+      <div id="histList"><div class="empty">No calculations yet</div></div>
+    </div>
+  </section>
+
+  <!-- CONVERTER -->
+  <section class="panel" id="tab-conv" hidden>
+    <div class="conv-top">
+      <select id="unitGroupSel" class="sel" aria-label="Unit group"><option value="all">All unit groups</option></select>
+      <select id="catSel" class="sel" aria-label="Unit category"></select>
+      <input id="unitSearch" class="inp" type="text" placeholder="Filter units…" autocomplete="off">
+    </div>
+    <div class="conv-input">
+      <input id="convVal" class="inp" type="text" value="1" inputmode="decimal" autocomplete="off">
+      <select id="fromUnit" class="sel"></select>
+    </div>
+    <div class="conv-list" id="convList"></div>
+  </section>
+
+  <!-- ============================================================
+       MATH STUDIO
+       ============================================================ -->
+  <section class="panel" id="tab-studio" hidden>
+    <div class="studio-layout">
+
+      <!-- ===== MAIN COLUMN ===== -->
+      <div class="studio-main">
+
+        <!-- EXPRESSION BOX -->
+        <div class="section-card" style="margin-top:0">
+          <div class="section-title">Expression box</div>
+          <div class="conv-top" style="margin-bottom:8px">
+            <input id="casInput" class="inp" type="text" placeholder="e.g.  x^2 - 4 = 0   ·   (x+1)^2   ·   sin(x)*x^2" autocomplete="off">
+            <input id="casVar" class="inp" type="text" value="x" maxlength="4" title="Variable">
+          </div>
+          <div class="modes" style="margin-bottom:0">
+            <button class="chip" id="casBackBtn" title="Delete the character before the cursor">⌫ back</button>
+            <button class="chip" id="casClearBtn" title="Clear the expression box">clear expression</button>
+            <button class="chip" id="casCopyExprBtn" title="Copy the expression">copy expression</button>
+          </div>
+        </div>
+
+        <!-- EXAMPLES + SYNTAX -->
+        <div class="section-card" style="margin-top:14px">
+          <div class="section-title">Examples</div>
+          <div class="examples" style="margin-top:0">
+            <span class="ex" data-ex="x^2 - 4 = 0">x²-4=0</span>
+            <span class="ex" data-ex="(x+1)^2">(x+1)²</span>
+            <span class="ex" data-ex="sin(x)*x^2">sin(x)·x²</span>
+            <span class="ex" data-ex="x^3 - 6x^2 + 11x - 6 = 0">cubic = 0</span>
+            <span class="ex" data-ex="e^x - 3 = 0">eˣ-3=0</span>
+            <span class="ex" data-ex="ln(x) - 1 = 0">ln(x)=1</span>
+            <span class="ex" data-ex="x^2 + 2x + 1">x²+2x+1</span>
+            <span class="ex" data-ex="1/(x^2 + 1)">1/(x²+1)</span>
+          </div>
+          <div id="casHint" style="margin-top:10px">
+            <b style="color:#9fb6d0">Syntax:</b>
+            <code>x^2</code>, <code>2x</code> or <code>2*x</code>, <code>sin(x)</code>,
+            <code>sqrt(x)</code>, <code>ln(x)</code>, <code>log(x)</code>, <code>exp(x)</code>,
+            <code>pi</code> or <code>π</code>, <code>e</code>, <code>abs(x)</code>.
+            Write <code>lhs = rhs</code> for equations — solving uses symbolic roots for polynomials
+            and numeric bracketing otherwise.
+          </div>
+        </div>
+
+        <!-- TOOLS -->
+        <div class="section-card">
+          <div class="section-title">Tools — act on the expression</div>
+          <div class="modes" style="margin-bottom:0">
+            <button class="chip" data-cas="simplify">Simplify</button>
+            <button class="chip" data-cas="expand">Expand</button>
+            <button class="chip" data-cas="factor">Factor</button>
+            <button class="chip" data-cas="diff">Differentiate</button>
+            <button class="chip" data-cas="diff2">2nd derivative</button>
+            <button class="chip" data-cas="integrate">Integrate</button>
+            <button class="chip" data-cas="solve">Solve</button>
+            <button class="chip" data-cas="eval">Substitute / Evaluate</button>
+            <button class="chip" data-cas="table">Table of values</button>
+            <button class="chip" id="casPlot2D">2D draw</button>
+            <button class="chip" id="casPlot3D">3D draw</button>
+            <button class="chip" data-cas="clear">clear history</button>
+          </div>
+        </div>
+
+        <!-- SOLUTION BOX -->
+        <div class="sol-box" id="solutionBox">
+          <div class="sol-head">
+            <span class="sol-title">Solution</span>
+            <span class="sol-status" id="solStatus">Ready — enter an expression or equation above</span>
+            <span class="sol-actions">
+              <button class="chip" id="solCopyBtn">copy answer</button>
+              <button class="chip" id="solResetViewBtn" hidden>reset view</button>
+              <button class="chip" id="solHidePlotBtn">hide plot</button>
+            </span>
+          </div>
+          <div class="display" style="min-height:140px;justify-content:flex-start;gap:10px;align-items:flex-start">
+            <div id="casEcho" style="text-align:left"></div>
+            <div id="casOutput" style="margin-top:auto;text-align:left">Ready — enter an expression or equation above</div>
+          </div>
+          <div class="sol-plot" id="solutionPlotWrap" hidden>
+            <canvas id="solutionCanvas" width="1000" height="520"></canvas>
+            <div class="plot-note" id="solutionPlotNote"></div>
+          </div>
+        </div>
+
+        <!-- CAS HISTORY -->
+        <div class="hist">
+          <h3>CAS history</h3>
+          <div id="casHist"><div class="empty">No operations yet</div></div>
+        </div>
+      </div>
+
+      <!-- ===== SIDEBAR: mathematical keyboard ===== -->
+      <aside class="studio-side" aria-label="Mathematical keyboard">
+        <div class="section-card" id="casKeyboardCard">
+          <div class="section-title">Mathematical keyboard</div>
+          <div class="cas-keyboard" id="casKeyboard">
+            <div class="kbd-group keypad"><div class="kbd-group-title">Numbers &amp; entry</div><div class="kbd-keys">
+              <span class="kbd-key num" data-token="7">7</span><span class="kbd-key num" data-token="8">8</span><span class="kbd-key num" data-token="9">9</span><span class="kbd-key act" data-action="back">⌫</span>
+              <span class="kbd-key num" data-token="4">4</span><span class="kbd-key num" data-token="5">5</span><span class="kbd-key num" data-token="6">6</span><span class="kbd-key act" data-action="clear">C</span>
+              <span class="kbd-key num" data-token="1">1</span><span class="kbd-key num" data-token="2">2</span><span class="kbd-key num" data-token="3">3</span><span class="kbd-key num" data-token=".">.</span>
+              <span class="kbd-key num" data-token="0">0</span><span class="kbd-key" data-token="=">=</span><span class="kbd-key" data-token="(">(</span><span class="kbd-key" data-token=")">)</span>
+            </div></div>
+            <div class="kbd-group"><div class="kbd-group-title">Variables &amp; constants</div><div class="kbd-keys">
+              <span class="kbd-key" data-token="x">x</span><span class="kbd-key" data-token="y">y</span><span class="kbd-key" data-token="z">z</span><span class="kbd-key" data-token="t">t</span><span class="kbd-key" data-token="a">a</span><span class="kbd-key" data-token="b">b</span><span class="kbd-key" data-token="c">c</span><span class="kbd-key" data-token="π">π</span><span class="kbd-key" data-token="e">e</span><span class="kbd-key" data-token="tau">τ</span><span class="kbd-key" data-token="phi">φ</span><span class="kbd-key" data-token="∞">∞</span>
+            </div></div>
+            <div class="kbd-group"><div class="kbd-group-title">Arithmetic &amp; relations</div><div class="kbd-keys">
+              <span class="kbd-key" data-token="+">+</span><span class="kbd-key" data-token="-">−</span><span class="kbd-key" data-token="*">×</span><span class="kbd-key" data-token="/">÷</span><span class="kbd-key" data-token="^">power ^</span><span class="kbd-key" data-token="^2">square</span><span class="kbd-key" data-token="^3">cube</span><span class="kbd-key" data-token="%">%</span><span class="kbd-key" data-token="!">factorial !</span><span class="kbd-key" data-token="=">=</span><span class="kbd-key" data-token="<">&lt;</span><span class="kbd-key" data-token=">">&gt;</span><span class="kbd-key" data-token=",">,</span>
+            </div></div>
+            <div class="kbd-group"><div class="kbd-group-title">Grouping &amp; roots</div><div class="kbd-keys">
+              <span class="kbd-key" data-token="( )">( )</span><span class="kbd-key" data-token="[ ]">[ ]</span><span class="kbd-key" data-token="sqrt()">√( )</span><span class="kbd-key" data-token="cbrt()">∛( )</span><span class="kbd-key" data-token="abs()">abs( )</span><span class="kbd-key" data-token="floor()">floor( )</span><span class="kbd-key" data-token="ceil()">ceil( )</span><span class="kbd-key" data-token="round()">round( )</span><span class="kbd-key" data-token="sign()">sign( )</span><span class="kbd-key" data-token="hypot()">hypot( )</span>
+            </div></div>
+            <div class="kbd-group"><div class="kbd-group-title">Trigonometry</div><div class="kbd-keys">
+              <span class="kbd-key" data-token="sin()">sin( )</span><span class="kbd-key" data-token="cos()">cos( )</span><span class="kbd-key" data-token="tan()">tan( )</span><span class="kbd-key" data-token="asin()">asin( )</span><span class="kbd-key" data-token="acos()">acos( )</span><span class="kbd-key" data-token="atan()">atan( )</span><span class="kbd-key" data-token="sinh()">sinh( )</span><span class="kbd-key" data-token="cosh()">cosh( )</span><span class="kbd-key" data-token="tanh()">tanh( )</span><span class="kbd-key" data-token="asinh()">asinh( )</span><span class="kbd-key" data-token="acosh()">acosh( )</span><span class="kbd-key" data-token="atanh()">atanh( )</span>
+            </div></div>
+            <div class="kbd-group"><div class="kbd-group-title">Exponents &amp; logarithms</div><div class="kbd-keys">
+              <span class="kbd-key" data-token="exp()">exp( )</span><span class="kbd-key" data-token="ln()">ln( )</span><span class="kbd-key" data-token="log()">log₁₀( )</span><span class="kbd-key" data-token="log2()">log₂( )</span><span class="kbd-key" data-token="logn(,)">log base</span><span class="kbd-key" data-token="10^()">10ˣ</span><span class="kbd-key" data-token="e^()">eˣ</span><span class="kbd-key" data-token="pow(,)">pow(a,b)</span>
+            </div></div>
+            <div class="kbd-group"><div class="kbd-group-title">Number tools &amp; angle conversion</div><div class="kbd-keys">
+              <span class="kbd-key" data-token="min(,)">min(a,b)</span><span class="kbd-key" data-token="max(,)">max(a,b)</span><span class="kbd-key" data-token="mod(,)">mod(a,b)</span><span class="kbd-key" data-token="fact()">fact( )</span><span class="kbd-key" data-token="deg()">deg( )</span><span class="kbd-key" data-token="rad()">rad( )</span><span class="kbd-key" data-token="1/()">1/x</span><span class="kbd-key" data-token="-()">−( )</span>
+            </div></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">Select any key to insert at the cursor. Function keys place the cursor inside parentheses; two-argument functions place it at the first argument.</div>
+        </div>
+      </aside>
+
+    </div><!-- /.studio-layout -->
+
+    <!-- Hidden plot engine -->
+    <div id="plotEngine" hidden aria-hidden="true" style="display:none">
+      <input id="plotInput" type="text" value="sin(x)/x">
+      <input id="plotVar" type="text" value="x">
+      <input id="plotXMin" type="number" value="-10">
+      <input id="plotXMax" type="number" value="10">
+      <input id="plotYMin" type="number">
+      <input id="plotYMax" type="number">
+      <canvas id="plotCanvas" width="1000" height="500"></canvas>
+
+      <input id="plot3Input" type="text" value="sin(x)*cos(y)">
+      <input id="plot3Range" type="number" value="5">
+      <input id="plot3Res" type="number" value="40">
+      <input id="plot3Zoom" type="range" min="0.3" max="2.5" value="1">
+      <canvas id="plot3Canvas" width="1000" height="560"></canvas>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   1. UTILITY
+   ========================================================= */
+let angleMode = "DEG";
+const isDeg = () => angleMode === "DEG";
+const toRad = x => isDeg() ? x * Math.PI / 180 : x;
+const fromRad = x => isDeg() ? x * 180 / Math.PI : x;
+const clean = x => Math.abs(x) < 1e-12 ? 0 : x;
+
+function factorial(n) {
+  if (!Number.isInteger(n) || n < 0) return NaN;
+  if (n > 170) return Infinity;
+  let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+}
+
+const CONSTS = { pi: Math.PI, "π": Math.PI, e: Math.E, tau: Math.PI*2, phi: (1+Math.sqrt(5))/2, "∞": Infinity };
+
+const FUNCS = {
+  sin:x=>clean(Math.sin(toRad(x))), cos:x=>clean(Math.cos(toRad(x))),
+  tan:x=>clean(Math.tan(toRad(x))), asin:x=>fromRad(Math.asin(x)),
+  acos:x=>fromRad(Math.acos(x)), atan:x=>fromRad(Math.atan(x)),
+  sinh:Math.sinh, cosh:Math.cosh, tanh:Math.tanh,
+  asinh:Math.asinh, acosh:Math.acosh, atanh:Math.atanh,
+  ln:Math.log, log:Math.log10, log10:Math.log10, log2:Math.log2,
+  sqrt:Math.sqrt, cbrt:Math.cbrt, abs:Math.abs,
+  exp:Math.exp, floor:Math.floor, ceil:Math.ceil,
+  round:(x,d)=>{const m=Math.pow(10,d||0);return Math.round(x*m)/m;},
+  sign:Math.sign, fact:factorial, mod:(a,b)=>a%b, pow:Math.pow,
+  min:(...a)=>Math.min(...a), max:(...a)=>Math.max(...a),
+  hypot:(...a)=>Math.hypot(...a), logn:(x,b)=>Math.log(x)/Math.log(b),
+  deg:x=>x*180/Math.PI, rad:x=>x*Math.PI/180
+};
+
+function fmt(n) {
+  if (typeof n !== "number" || !isFinite(n)) return n === Infinity ? "∞" : (n === -Infinity ? "-∞" : "—");
+  if (n === 0) return "0";
+  const a = Math.abs(n);
+  if (a >= 1e12 || a < 1e-6) {
+    const s = n.toExponential(6);
+    let [m, e] = s.split("e");
+    m = m.replace(/0+$/, "").replace(/\.$/, "");
+    return m + "e" + e.replace("+", "");
+  }
+  return String(parseFloat(n.toPrecision(11)));
+}
+function plain(n) { if (!isFinite(n)) return "0"; return String(parseFloat(n.toPrecision(13))); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* =========================================================
+   2. TOKENIZER  (Unicode-friendly)
+   ========================================================= */
+function normalizeMathInput(src) {
+  return String(src)
+    .replace(/[\u00B7\u22C5\u2022\u2219×\u2715\u2716]/g, "*")
+    .replace(/[÷∕⁄]/g, "/")
+    .replace(/[\u2212\u2013\u2014\u2015]/g, "-")
+    .replace(/[\uFF08]/g, "(")
+    .replace(/[\uFF09]/g, ")")
+    .replace(/[\uFF0B]/g, "+")
+    .replace(/[\uFF0D]/g, "-")
+    .replace(/[\uFF0A]/g, "*")
+    .replace(/[\uFF0F]/g, "/")
+    .replace(/[\uFF1D]/g, "=");
+}
+
+function tokenize(src) {
+  src = normalizeMathInput(src);
+  const t = []; let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (/[0-9.]/.test(c)) {
+      let j = i, dots = 0;
+      while (j < src.length && /[0-9.]/.test(src[j])) { if (src[j] === ".") dots++; j++; }
+      if (dots > 1) throw new Error("Bad number: multiple dots");
+      if (j < src.length && /[eE]/.test(src[j])) {
+        if (/[0-9]/.test(src[j+1] || "")) { j++; while (j < src.length && /[0-9]/.test(src[j])) j++; }
+        else if (/[+\-]/.test(src[j+1] || "") && /[0-9]/.test(src[j+2] || "")) {
+          j += 2; while (j < src.length && /[0-9]/.test(src[j])) j++;
+        }
+      }
+      const num = parseFloat(src.slice(i, j));
+      if (!isFinite(num)) throw new Error("Bad number");
+      t.push({ t: "num", v: num }); i = j; continue;
+    }
+    if (/[a-zA-Zπ_∞]/.test(c)) {
+      let j = i;
+      while (j < src.length && /[a-zA-Zπ_∞0-9]/.test(src[j])) j++;
+      t.push({ t: "id", v: src.slice(i, j).toLowerCase() }); i = j; continue;
+    }
+    if ("+-*/^%(),!=".includes(c)) { t.push({ t: "op", v: c }); i++; continue; }
+    throw new Error("Unexpected character: " + c);
+  }
+  return t;
+}
+
+/* =========================================================
+   3. NUMERIC EVALUATOR
+   ========================================================= */
+function evaluate(input) {
+  let src = String(input).trim();
+  if (!src) throw new Error("Empty");
+  let open = 0;
+  for (const ch of src) { if (ch === "(") open++; else if (ch === ")") open--; }
+  if (open > 0) src += ")".repeat(open);
+  const tk = tokenize(src);
+  let pos = 0;
+  const peek = () => tk[pos]; const next = () => tk[pos++];
+  const isOp = v => { const t = peek(); return t && t.t === "op" && t.v === v; };
+  function parseExpr() {
+    let l = parseTerm();
+    while (peek() && peek().t === "op" && (peek().v === "+" || peek().v === "-")) {
+      const op = next().v; const r = parseTerm();
+      l = op === "+" ? l + r : l - r;
+    }
+    return l;
+  }
+  function parseTerm() {
+    let l = parseUnary();
+    while (peek() && peek().t === "op" && (peek().v === "*" || peek().v === "/")) {
+      const op = next().v; const r = parseUnary();
+      if (op === "*") l *= r; else { if (r === 0) throw new Error("Division by zero"); l /= r; }
+    }
+    return l;
+  }
+  function parseUnary() {
+    if (peek() && peek().t === "op" && (peek().v === "-" || peek().v === "+")) {
+      const op = next().v; const v = parseUnary(); return op === "-" ? -v : v;
+    }
+    return parsePower();
+  }
+  function parsePower() {
+    const b = parsePostfix();
+    if (isOp("^")) { next(); return Math.pow(b, parseUnary()); }
+    return b;
+  }
+  function parsePostfix() {
+    let v = parsePrimary();
+    while (peek() && peek().t === "op" && (peek().v === "!" || peek().v === "%")) {
+      const op = next().v; v = op === "!" ? factorial(v) : v / 100;
+    }
+    return v;
+  }
+  function parsePrimary() {
+    const t = next();
+    if (!t) throw new Error("Unexpected end of expression");
+    if (t.t === "num") return t.v;
+    if (t.t === "op" && t.v === "(") {
+      const v = parseExpr();
+      if (!isOp(")")) throw new Error("Missing )");
+      next(); return v;
+    }
+    if (t.t === "id") {
+      const name = t.v;
+      if (isOp("(")) {
+        next(); const args = [parseExpr()];
+        while (isOp(",")) { next(); args.push(parseExpr()); }
+        if (!isOp(")")) throw new Error("Missing )");
+        next();
+        const f = FUNCS[name];
+        if (!f) throw new Error("Unknown function: " + name);
+        return f(...args);
+      }
+      if (name in CONSTS) return CONSTS[name];
+      throw new Error("Unknown symbol: " + name);
+    }
+    throw new Error("Unexpected token");
+  }
+  const r = parseExpr();
+  if (pos < tk.length) throw new Error("Trailing input");
+  return r;
+}
+
+/* =========================================================
+   4. CAS PARSER
+   ========================================================= */
+function casParse(src) {
+  const tk = tokenize(src);
+  let pos = 0;
+  const peek = () => tk[pos]; const next = () => tk[pos++];
+  const isOp = v => { const t = peek(); return t && t.t === "op" && t.v === v; };
+
+  function parseExpr() {
+    let l = parseTerm();
+    while (peek() && peek().t === "op" && (peek().v === "+" || peek().v === "-")) {
+      const op = next().v; const r = parseTerm();
+      l = op === "+" ? { t: "add", l, r } : { t: "sub", l, r };
+    }
+    return l;
+  }
+  function parseTerm() {
+    let l = parseUnary();
+    while (peek()) {
+      const t = peek();
+      if (t.t === "op" && (t.v === "*" || t.v === "/")) {
+        const op = next().v; const r = parseUnary();
+        l = op === "*" ? { t: "mul", l, r } : { t: "div", l, r };
+      } else if (t.t === "id" || t.t === "num" || (t.t === "op" && t.v === "(")) {
+        const r = parseUnary();
+        l = { t: "mul", l, r };
+      } else break;
+    }
+    return l;
+  }
+  function parseUnary() {
+    if (peek() && peek().t === "op" && (peek().v === "-" || peek().v === "+")) {
+      const op = next().v; const e = parseUnary();
+      return op === "-" ? { t: "neg", e } : e;
+    }
+    return parsePower();
+  }
+  function parsePower() {
+    const base = parsePostfix();
+    if (isOp("^")) { next(); const e = parseUnary(); return { t: "pow", l: base, r: e }; }
+    return base;
+  }
+  function parsePostfix() {
+    let v = parsePrimary();
+    while (peek() && peek().t === "op" && peek().v === "!") {
+      next(); v = { t: "call", n: "fact", a: [v] };
+    }
+    return v;
+  }
+  function parsePrimary() {
+    const t = next();
+    if (!t) throw new Error("Unexpected end of expression");
+    if (t.t === "num") return { t: "num", v: t.v };
+    if (t.t === "op" && t.v === "(") {
+      const e = parseExpr();
+      if (!isOp(")")) throw new Error("Missing )");
+      next(); return e;
+    }
+    if (t.t === "id") {
+      const name = t.v;
+      if (isOp("(")) {
+        next();
+        const args = [parseExpr()];
+        while (isOp(",")) { next(); args.push(parseExpr()); }
+        if (!isOp(")")) throw new Error("Missing )");
+        next();
+        return { t: "call", n: name, a: args };
+      }
+      if (name === "pi" || name === "π") return { t: "num", v: Math.PI };
+      if (name === "e") return { t: "num", v: Math.E };
+      if (name === "tau") return { t: "num", v: Math.PI*2 };
+      if (name === "phi") return { t: "num", v: (1 + Math.sqrt(5)) / 2 };
+      if (name === "∞") return { t: "num", v: Infinity };
+      return { t: "var", n: name };
+    }
+    throw new Error("Unexpected token");
+  }
+
+  const r = parseExpr();
+  if (pos < tk.length) throw new Error("Trailing input: " + JSON.stringify(tk[pos]));
+  return r;
+}
+
+/* =========================================================
+   5. CAS AST OPERATIONS
+   ========================================================= */
+function nodeKey(n) {
+  switch (n.t) {
+    case "num": return "#" + n.v.toPrecision(12);
+    case "var": return n.n;
+    case "neg": return "-(" + nodeKey(n.e) + ")";
+    case "add": return "(" + nodeKey(n.l) + "+" + nodeKey(n.r) + ")";
+    case "sub": return "(" + nodeKey(n.l) + "-" + nodeKey(n.r) + ")";
+    case "mul": { const ks = []; flattenMulKeys(n, ks); ks.sort(); return "(" + ks.join("*") + ")"; }
+    case "div": return "(" + nodeKey(n.l) + "/" + nodeKey(n.r) + ")";
+    case "pow": return "(" + nodeKey(n.l) + "^" + nodeKey(n.r) + ")";
+    case "call": return n.n + "(" + n.a.map(nodeKey).join(",") + ")";
+  }
+  return "?";
+}
+function flattenMulKeys(n, out) {
+  if (n.t === "mul") { flattenMulKeys(n.l, out); flattenMulKeys(n.r, out); }
+  else out.push(nodeKey(n));
+}
+function splitCoeff(e) {
+  if (e.t === "num") return { coeff: e.v, base: null };
+  if (e.t === "neg") { const r = splitCoeff(e.e); return { coeff: -r.coeff, base: r.base }; }
+  if (e.t === "mul") {
+    const l = splitCoeff(e.l), r = splitCoeff(e.r);
+    if (l.base === null) return { coeff: l.coeff * r.coeff, base: r.base };
+    if (r.base === null) return { coeff: l.coeff * r.coeff, base: l.base };
+    return { coeff: l.coeff * r.coeff, base: { t: "mul", l: l.base, r: r.base } };
+  }
+  return { coeff: 1, base: e };
+}
+function flattenAdd(n, sign, out) {
+  if (n.t === "add") { flattenAdd(n.l, sign, out); flattenAdd(n.r, sign, out); }
+  else if (n.t === "sub") { flattenAdd(n.l, sign, out); flattenAdd(n.r, -sign, out); }
+  else if (n.t === "neg") { flattenAdd(n.e, -sign, out); }
+  else out.push({ sign, e: n });
+}
+function mergeTerms(terms) {
+  const map = new Map();
+  for (const { sign, e } of terms) {
+    const { coeff, base } = splitCoeff(e);
+    const key = base === null ? "__const__" : nodeKey(base);
+    const c = sign * coeff;
+    if (map.has(key)) map.get(key).coeff += c;
+    else map.set(key, { coeff: c, base });
+  }
+  const out = [];
+  for (const { coeff, base } of map.values()) {
+    if (Math.abs(coeff) < 1e-15) continue;
+    if (base === null) out.push({ t: "num", v: coeff });
+    else if (coeff === 1) out.push(base);
+    else if (coeff === -1) out.push({ t: "neg", e: base });
+    else out.push({ t: "mul", l: { t: "num", v: coeff }, r: base });
+  }
+  out.sort((a, b) => (a.t === "num" ? 1 : 0) - (b.t === "num" ? 1 : 0));
+  return out;
+}
+function flattenMulFactors(n, out) {
+  if (n.t === "mul") { flattenMulFactors(n.l, out); flattenMulFactors(n.r, out); }
+  else out.push(n);
+}
+
+function simplify(n) {
+  if (!n) return n;
+  if (n.t === "num" || n.t === "var") return n;
+  if (n.t === "neg") {
+    const e = simplify(n.e);
+    if (e.t === "num") return { t: "num", v: -e.v };
+    if (e.t === "neg") return e.e;
+    return { t: "neg", e };
+  }
+  if (n.t === "add" || n.t === "sub") {
+    let l = simplify(n.l), r = simplify(n.r);
+    if (n.t === "sub") r = simplify({ t: "neg", e: r });
+    if (l.t === "num" && r.t === "num") return { t: "num", v: l.v + r.v };
+    if (l.t === "num" && l.v === 0) return r;
+    if (r.t === "num" && r.v === 0) return l;
+    const terms = [];
+    flattenAdd(l, 1, terms); flattenAdd(r, 1, terms);
+    const merged = mergeTerms(terms);
+    if (merged.length === 0) return { t: "num", v: 0 };
+    if (merged.length === 1) return merged[0];
+    return merged.reduce((a, b) => ({ t: "add", l: a, r: b }));
+  }
+  if (n.t === "mul") {
+    const l = simplify(n.l), r = simplify(n.r);
+    if ((l.t === "num" && l.v === 0) || (r.t === "num" && r.v === 0)) return { t: "num", v: 0 };
+    if (l.t === "num" && l.v === 1) return r;
+    if (r.t === "num" && r.v === 1) return l;
+    if (l.t === "num" && r.t === "num") return { t: "num", v: l.v * r.v };
+    const factors = [];
+    flattenMulFactors(l, factors); flattenMulFactors(r, factors);
+    let num = 1; const others = [];
+    for (const f of factors) {
+      if (f.t === "num") num *= f.v;
+      else if (f.t === "neg") { num *= -1; others.push(simplify(f.e)); }
+      else others.push(f);
+    }
+    if (num === 0) return { t: "num", v: 0 };
+    const grouped = new Map();
+    for (const f of others) {
+      const base = f.t === "pow" ? f.l : f;
+      const exp = f.t === "pow" ? f.r : { t: "num", v: 1 };
+      const key = nodeKey(base);
+      if (grouped.has(key)) grouped.get(key).exps.push(exp);
+      else grouped.set(key, { base, exps: [exp] });
+    }
+    const rf = [];
+    for (const { base, exps } of grouped.values()) {
+      let e = exps.reduce((a, b) => simplify({ t: "add", l: a, r: b }));
+      if (e.t === "num" && e.v === 0) continue;
+      if (e.t === "num" && e.v === 1) rf.push(base);
+      else rf.push({ t: "pow", l: base, r: e });
+    }
+    if (num !== 1 || rf.length === 0) rf.unshift({ t: "num", v: num });
+    if (rf.length === 1) return rf[0];
+    return rf.reduce((a, b) => ({ t: "mul", l: a, r: b }));
+  }
+  if (n.t === "div") {
+    const l = simplify(n.l), r = simplify(n.r);
+    if (l.t === "num" && l.v === 0) return { t: "num", v: 0 };
+    if (r.t === "num" && r.v === 1) return l;
+    if (r.t === "num" && r.v === 0) return { t: "div", l, r };
+    if (l.t === "num" && r.t === "num") {
+      const v = l.v / r.v;
+      if (Number.isInteger(v)) return { t: "num", v };
+      return { t: "div", l, r };
+    }
+    if (nodeKey(l) === nodeKey(r)) return { t: "num", v: 1 };
+    return { t: "div", l, r };
+  }
+  if (n.t === "pow") {
+    const l = simplify(n.l), r = simplify(n.r);
+    if (r.t === "num" && r.v === 0) return { t: "num", v: 1 };
+    if (r.t === "num" && r.v === 1) return l;
+    if (l.t === "num" && r.t === "num" && Number.isInteger(r.v) && r.v >= 0 && r.v <= 40)
+      return { t: "num", v: Math.pow(l.v, r.v) };
+    if (l.t === "num" && l.v === 0) return { t: "num", v: 0 };
+    if (l.t === "num" && l.v === 1) return { t: "num", v: 1 };
+    if (l.t === "pow") return simplify({ t: "pow", l: l.l, r: simplify({ t: "mul", l: l.r, r }) });
+    return { t: "pow", l, r };
+  }
+  if (n.t === "call") {
+    const a = n.a.map(simplify);
+    if (a.every(x => x.t === "num")) {
+      const fn = FUNCS[n.n];
+      if (fn) {
+        try {
+          const v = fn(...a.map(x => x.v));
+          if (typeof v === "number" && isFinite(v)) return { t: "num", v: clean(v) };
+        } catch (_) {}
+      }
+    }
+    return { t: "call", n: n.n, a };
+  }
+  return n;
+}
+
+function expand(n) {
+  n = simplify(n);
+  if (n.t === "add" || n.t === "sub") return simplify({ t: n.t, l: expand(n.l), r: expand(n.r) });
+  if (n.t === "neg") return simplify({ t: "neg", e: expand(n.e) });
+  if (n.t === "mul") {
+    const l = expand(n.l), r = expand(n.r);
+    const ls = collectAdds(l), rs = collectAdds(r);
+    let result = null;
+    for (const lt of ls) for (const rt of rs) {
+      const prod = simplify({ t: "mul", l: lt, r: rt });
+      result = result ? simplify({ t: "add", l: result, r: prod }) : prod;
+    }
+    return result || { t: "num", v: 0 };
+  }
+  if (n.t === "pow" && n.r.t === "num" && Number.isInteger(n.r.v) && n.r.v >= 0 && n.r.v <= 12) {
+    if (n.r.v === 0) return { t: "num", v: 1 };
+    if (n.r.v === 1) return expand(n.l);
+    const base = expand(n.l);
+    let r = base;
+    for (let i = 1; i < n.r.v; i++) r = expand({ t: "mul", l: r, r: base });
+    return r;
+  }
+  return n;
+}
+function collectAdds(n, sign) {
+  sign = sign === undefined ? 1 : sign;
+  if (n.t === "add") return [...collectAdds(n.l, sign), ...collectAdds(n.r, sign)];
+  if (n.t === "sub") return [...collectAdds(n.l, sign), ...collectAdds(n.r, -sign)];
+  if (n.t === "neg") return collectAdds(n.e, -sign);
+  if (sign === 1) return [n];
+  return [{ t: "neg", e: n }];
+}
+
+function diff(n, x) {
+  switch (n.t) {
+    case "num": return { t: "num", v: 0 };
+    case "var": return { t: "num", v: n.n === x ? 1 : 0 };
+    case "neg": return { t: "neg", e: diff(n.e, x) };
+    case "add": return { t: "add", l: diff(n.l, x), r: diff(n.r, x) };
+    case "sub": return { t: "sub", l: diff(n.l, x), r: diff(n.r, x) };
+    case "mul": return { t: "add",
+      l: { t: "mul", l: diff(n.l, x), r: n.r },
+      r: { t: "mul", l: n.l, r: diff(n.r, x) } };
+    case "div": return { t: "div",
+      l: { t: "sub",
+        l: { t: "mul", l: diff(n.l, x), r: n.r },
+        r: { t: "mul", l: n.l, r: diff(n.r, x) } },
+      r: { t: "pow", l: n.r, r: { t: "num", v: 2 } } };
+    case "pow": {
+      if (n.r.t === "num") {
+        const np1 = { t: "num", v: n.r.v - 1 };
+        return { t: "mul",
+          l: { t: "mul", l: { t: "num", v: n.r.v }, r: { t: "pow", l: n.l, r: np1 } },
+          r: diff(n.l, x) };
+      }
+      return { t: "mul", l: n, r: { t: "add",
+        l: { t: "mul", l: diff(n.r, x), r: { t: "call", n: "ln", a: [n.l] } },
+        r: { t: "mul", l: n.r, r: { t: "div", l: diff(n.l, x), r: n.l } } } };
+    }
+    case "call": {
+      const u = n.a[0]; const du = diff(u, x);
+      const neg = e => ({ t: "neg", e });
+      const mul = (a, b) => ({ t: "mul", l: a, r: b });
+      const pow2 = a => ({ t: "pow", l: a, r: { t: "num", v: 2 } });
+      const call = (name, arg) => ({ t: "call", n: name, a: [arg] });
+      switch (n.n) {
+        case "sin": return mul(call("cos", u), du);
+        case "cos": return neg(mul(call("sin", u), du));
+        case "tan": return { t: "div", l: du, r: pow2(call("cos", u)) };
+        case "asin": return { t: "div", l: du, r: call("sqrt", { t: "sub", l: { t: "num", v: 1 }, r: pow2(u) }) };
+        case "acos": return neg({ t: "div", l: du, r: call("sqrt", { t: "sub", l: { t: "num", v: 1 }, r: pow2(u) }) });
+        case "atan": return { t: "div", l: du, r: { t: "add", l: { t: "num", v: 1 }, r: pow2(u) } };
+        case "sinh": return mul(call("cosh", u), du);
+        case "cosh": return mul(call("sinh", u), du);
+        case "tanh": return { t: "div", l: du, r: pow2(call("cosh", u)) };
+        case "ln": return { t: "div", l: du, r: u };
+        case "log": case "log10": return { t: "div", l: du, r: mul(u, { t: "call", n: "ln", a: [{ t: "num", v: 10 }] }) };
+        case "log2": return { t: "div", l: du, r: mul(u, { t: "call", n: "ln", a: [{ t: "num", v: 2 }] }) };
+        case "sqrt": return { t: "div", l: du, r: mul({ t: "num", v: 2 }, call("sqrt", u)) };
+        case "cbrt": return { t: "div", l: du, r: mul({ t: "num", v: 3 }, pow2(call("cbrt", u))) };
+        case "exp": return mul(call("exp", u), du);
+        case "abs": return mul({ t: "div", l: u, r: call("abs", u) }, du);
+        case "sign": return { t: "num", v: 0 };
+        default: throw new Error("Cannot differentiate '" + n.n + "'");
+      }
+    }
+  }
+  throw new Error("Cannot differentiate this expression");
+}
+
+function evalNode(n, vars) {
+  switch (n.t) {
+    case "num": return n.v;
+    case "var":
+      if (n.n in vars) return vars[n.n];
+      if (n.n in CONSTS) return CONSTS[n.n];
+      throw new Error("Unknown variable: " + n.n);
+    case "neg": return -evalNode(n.e, vars);
+    case "add": return evalNode(n.l, vars) + evalNode(n.r, vars);
+    case "sub": return evalNode(n.l, vars) - evalNode(n.r, vars);
+    case "mul": return evalNode(n.l, vars) * evalNode(n.r, vars);
+    case "div": { const d = evalNode(n.r, vars); if (d === 0) throw new Error("Division by zero"); return evalNode(n.l, vars) / d; }
+    case "pow": return Math.pow(evalNode(n.l, vars), evalNode(n.r, vars));
+    case "call": { const f = FUNCS[n.n]; if (!f) throw new Error("Unknown function: " + n.n); return f(...n.a.map(a => evalNode(a, vars))); }
+  }
+  throw new Error("Bad AST node");
+}
+
+function extractPoly(n, x) {
+  switch (n.t) {
+    case "num": return [n.v];
+    case "var": return n.n === x ? [0, 1] : null;
+    case "neg": { const p = extractPoly(n.e, x); return p ? p.map(v => -v) : null; }
+    case "add": case "sub": {
+      const l = extractPoly(n.l, x), r = extractPoly(n.r, x);
+      if (!l || !r) return null;
+      const sign = n.t === "add" ? 1 : -1;
+      return polyAdd(l, r.map(v => sign * v));
+    }
+    case "mul": {
+      const l = extractPoly(n.l, x), r = extractPoly(n.r, x);
+      if (!l || !r) return null;
+      return polyMul(l, r);
+    }
+    case "div": {
+      const l = extractPoly(n.l, x), r = extractPoly(n.r, x);
+      if (!l || !r || r.length !== 1 || r[0] === 0) return null;
+      return l.map(v => v / r[0]);
+    }
+    case "pow": {
+      const l = extractPoly(n.l, x), r = extractPoly(n.r, x);
+      if (!l || !r || r.length !== 1) return null;
+      const e = r[0];
+      if (!Number.isInteger(e) || e < 0 || e > 8) return null;
+      return polyPow(l, e);
+    }
+  }
+  return null;
+}
+function polyAdd(a, b) { const n = Math.max(a.length, b.length); const r = []; for (let i = 0; i < n; i++) r.push((a[i]||0)+(b[i]||0)); return r; }
+function polyMul(a, b) { const r = new Array(a.length+b.length-1).fill(0); for (let i=0;i<a.length;i++) for (let j=0;j<b.length;j++) r[i+j]+=a[i]*b[j]; return r; }
+function polyPow(a, n) { let r=[1]; for (let i=0;i<n;i++) r=polyMul(r,a); return r; }
+
+function solvePoly(coeffs, variableName = "x") {
+  while (coeffs.length > 1 && Math.abs(coeffs[coeffs.length-1]) < 1e-14) coeffs.pop();
+  const deg = coeffs.length - 1;
+  if (deg === 0) { if (Math.abs(coeffs[0]) < 1e-14) return "Identity (true for all values)"; return "No solution"; }
+  if (deg === 1) return variableName + " = " + fmt(-coeffs[0] / coeffs[1]);
+  if (deg === 2) {
+    const [c, b, a] = coeffs;
+    const disc = b*b - 4*a*c;
+    if (disc < -1e-14) {
+      const re = -b / (2*a); const im = Math.sqrt(-disc) / (2*a);
+      return variableName + " = " + fmt(re) + " ± " + fmt(im) + "i";
+    }
+    const s = Math.sqrt(Math.max(0, disc));
+    const x1 = (-b + s) / (2*a), x2 = (-b - s) / (2*a);
+    if (Math.abs(x1 - x2) < 1e-12) return variableName + " = " + fmt(x1) + "  (double root)";
+    return variableName + " = " + fmt(x1) + "  or  " + variableName + " = " + fmt(x2);
+  }
+  if (deg === 3) {
+    const [d, c, b, a] = coeffs;
+    const A=b/a, B=c/a, C=d/a;
+    const p=B-A*A/3, q=2*A*A*A/27-A*B/3+C;
+    const disc=q*q/4+p*p*p/27;
+    const roots=[];
+    if (disc > 1e-14) {
+      const sq=Math.sqrt(disc);
+      roots.push(Math.cbrt(-q/2+sq)+Math.cbrt(-q/2-sq)-A/3);
+    } else if (Math.abs(p)<1e-14 && Math.abs(q)<1e-14) {
+      roots.push(-A/3);
+    } else if (disc >= -1e-14) {
+      const u=Math.cbrt(-q/2);
+      roots.push(2*u-A/3, -u-A/3);
+    } else {
+      const radius=2*Math.sqrt(-p/3);
+      const arg=Math.max(-1,Math.min(1,(3*q/(2*p))*Math.sqrt(-3/p)));
+      const theta=Math.acos(arg)/3;
+      for(let k=0;k<3;k++) roots.push(radius*Math.cos(theta-2*Math.PI*k/3)-A/3);
+    }
+    const unique=[];
+    roots.filter(Number.isFinite).sort((x,y)=>x-y).forEach(r=>{if(!unique.some(u=>Math.abs(u-r)<1e-8))unique.push(r);});
+    return variableName + " = " + unique.map(fmt).join("  or  "+variableName+" = ");
+  }
+  return null;
+}
+
+function findRoots(f, a, b, n) {
+  const roots = [];
+  let prevX = a, prevY = f(a);
+  if (prevY === 0) roots.push(a);
+  for (let i = 1; i <= n; i++) {
+    const x = a + (b - a) * i / n;
+    const y = f(x);
+    if (!isFinite(y) || !isFinite(prevY)) { prevX = x; prevY = y; continue; }
+    if (y === 0) { if (!roots.some(r => Math.abs(r-x) < 1e-6)) roots.push(x); }
+    else if (prevY * y < 0) {
+      let lo = prevX, hi = x, flo = prevY;
+      for (let k = 0; k < 80; k++) {
+        const mid = (lo + hi) / 2;
+        const fmid = f(mid);
+        if (!isFinite(fmid)) break;
+        if (fmid === 0) { lo = hi = mid; break; }
+        if (flo * fmid < 0) hi = mid;
+        else { lo = mid; flo = fmid; }
+      }
+      const root = (lo + hi) / 2;
+      if (!roots.some(r => Math.abs(r-root) < 1e-6)) roots.push(root);
+    }
+    prevX = x; prevY = y;
+  }
+  return roots;
+}
+
+function precOf(n) {
+  switch (n.t) {
+    case "add": case "sub": return 1;
+    case "mul": case "div": return 2;
+    case "neg": return 2;
+    case "pow": return 4;
+    default: return 5;
+  }
+}
+function nodeToString(n, parentPrec) {
+  parentPrec = parentPrec || 0;
+  const p = precOf(n);
+  let s;
+  switch (n.t) {
+    case "num": s = fmt(n.v); break;
+    case "var": s = n.n; break;
+    case "neg": s = "-" + nodeToString(n.e, 2); break;
+    case "add": s = nodeToString(n.l, 1) + " + " + nodeToString(n.r, 1); break;
+    case "sub": s = nodeToString(n.l, 1) + " - " + nodeToString(n.r, 2); break;
+    case "mul": {
+      const lS = nodeToString(n.l, 2), rS = nodeToString(n.r, 2);
+      if (n.l.t === "num" && (n.r.t === "var" || n.r.t === "pow")) s = lS + rS;
+      else s = lS + "*" + rS;
+      break;
+    }
+    case "div": s = nodeToString(n.l, 2) + "/" + nodeToString(n.r, 3); break;
+    case "pow": s = nodeToString(n.l, 5) + "^" + nodeToString(n.r, 4); break;
+    case "call": s = n.n + "(" + n.a.map(a => nodeToString(a, 0)).join(", ") + ")"; break;
+    default: s = "?";
+  }
+  return p < parentPrec ? "(" + s + ")" : s;
+}
+
+/* =========================================================
+   6. CALCULATOR UI
+   ========================================================= */
+const exprLine = document.getElementById("exprLine");
+const resultLine = document.getElementById("resultLine");
+let expr = "";
+const history = [];
+function updateDisplay() {
+  exprLine.textContent = expr || "0";
+  if (!expr.trim()) { resultLine.textContent = ""; resultLine.classList.remove("err"); return; }
+  try {
+    const v = evaluate(expr);
+    resultLine.textContent = "= " + fmt(v);
+    resultLine.classList.remove("err");
+  } catch (e) { resultLine.textContent = ""; resultLine.classList.remove("err"); }
+}
+function insert(text) { expr += text; updateDisplay(); exprLine.scrollTop = exprLine.scrollHeight; }
+function doEquals() {
+  if (!expr.trim()) return;
+  try {
+    const v = evaluate(expr);
+    history.unshift({ e: expr, v: fmt(v) });
+    if (history.length > 40) history.pop();
+    renderHistory();
+    expr = plain(v); updateDisplay();
+    resultLine.textContent = ""; exprLine.textContent = expr;
+  } catch (err) {
+    resultLine.textContent = "⚠ " + err.message; resultLine.classList.add("err");
+  }
+}
+function renderHistory() {
+  const el = document.getElementById("histList");
+  if (!history.length) { el.innerHTML = '<div class="empty">No calculations yet</div>'; return; }
+  el.innerHTML = history.map((h, i) =>
+    `<div class="hrow" data-i="${i}"><span>${escapeHtml(h.e)}</span><span>= ${h.v}</span></div>`
+  ).join("");
+}
+document.getElementById("histList").addEventListener("click", e => {
+  const row = e.target.closest(".hrow"); if (!row) return;
+  const h = history[+row.dataset.i]; if (h) { expr += h.e; updateDisplay(); }
+});
+document.querySelectorAll("#sciPad .btn, #mainPad .btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.ins !== undefined) insert(btn.dataset.ins);
+    else {
+      const act = btn.dataset.act;
+      if (act === "clear") { expr = ""; resultLine.textContent = ""; updateDisplay(); }
+      else if (act === "back") { expr = expr.slice(0, -1); updateDisplay(); }
+      else if (act === "equals") doEquals();
+    }
+  });
+});
+document.getElementById("angleBtn").addEventListener("click", function () {
+  angleMode = angleMode === "DEG" ? "RAD" : "DEG";
+  this.textContent = angleMode;
+  this.classList.toggle("on", angleMode === "DEG");
+  updateDisplay();
+});
+document.getElementById("clearHist").addEventListener("click", () => { history.length = 0; renderHistory(); });
+document.addEventListener("keydown", e => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "select" || tag === "textarea") return;
+  if (!document.getElementById("tab-calc").hidden) {
+    const k = e.key;
+    if (/^[0-9]$/.test(k) || "+-*/^().,%!".includes(k)) { insert(k); e.preventDefault(); }
+    else if (k === "Enter" || k === "=") { doEquals(); e.preventDefault(); }
+    else if (k === "Backspace") { expr = expr.slice(0, -1); updateDisplay(); e.preventDefault(); }
+    else if (k === "Escape") { expr = ""; resultLine.textContent = ""; updateDisplay(); e.preventDefault(); }
+    else if (k === "p") { insert("π"); e.preventDefault(); }
+  }
+});
+
+/* =========================================================
+   7. UNIT DATABASE (unchanged)
+   ========================================================= */
+const TEMP = [
+  { to: v => v, from: v => v },
+  { to: v => (v - 32) * 5 / 9, from: v => v * 9 / 5 + 32 },
+  { to: v => v - 273.15, from: v => v + 273.15 },
+  { to: v => (v - 491.67) * 5 / 9, from: v => (v + 273.15) * 9 / 5 },
+  { to: v => v * 1.25, from: v => v * 0.8 }
+];
+
+const CATS = [
+{ name: "Length", units: [
+  ["Nanometer","nm",1e-9],["Micrometer","µm",1e-6],["Millimeter","mm",1e-3],
+  ["Centimeter","cm",1e-2],["Decimeter","dm",0.1],["Meter","m",1],
+  ["Decameter","dam",10],["Hectometer","hm",100],["Kilometer","km",1000],
+  ["Megameter","Mm",1e6],["Inch","in",0.0254],["Foot","ft",0.3048],
+  ["Yard","yd",0.9144],["Mile","mi",1609.344],["Nautical mile","nmi",1852],
+  ["Fathom","ftm",1.8288],["Rod","rd",5.0292],["Chain","ch",20.1168],
+  ["Furlong","fur",201.168],["League","lea",4828.032],["Angstrom","Å",1e-10],
+  ["Mil (thou)","mil",2.54e-5],["Astronomical unit","AU",1.495978707e11],
+  ["Light-year","ly",9.4607304725808e15],["Parsec","pc",3.0856775814913673e16],
+  ["Hand","hh",0.1016],["Cubit","cubit",0.4572],["Link","link",0.201168],
+  ["Pica","pica",0.00423333],["Point","pt",0.000352778]
+]},
+{ name: "Mass", units: [
+  ["Microgram","µg",1e-9],["Milligram","mg",1e-6],["Gram","g",1e-3],
+  ["Kilogram","kg",1],["Tonne (metric)","t",1000],["Ounce","oz",0.028349523125],
+  ["Pound","lb",0.45359237],["Stone","st",6.35029318],["US ton (short)","ton",907.18474],
+  ["UK ton (long)","long ton",1016.0469088],["Carat","ct",2e-4],["Grain","gr",6.479891e-5],
+  ["Slug","slug",14.5939029372],["Atomic mass unit","u",1.6605390666e-27],
+  ["Hundredweight (US)","cwt",45.359237],["Hundredweight (UK)","long cwt",50.80234544]
+]},
+{ name: "Temperature", special: "temp", units: [
+  ["Celsius","°C"],["Fahrenheit","°F"],["Kelvin","K"],["Rankine","°R"],["Réaumur","°Ré"]
+]},
+{ name: "Area", units: [
+  ["Square millimeter","mm²",1e-6],["Square centimeter","cm²",1e-4],["Square meter","m²",1],
+  ["Are","a",100],["Hectare","ha",1e4],["Square kilometer","km²",1e6],
+  ["Square inch","in²",6.4516e-4],["Square foot","ft²",0.09290304],["Square yard","yd²",0.83612736],
+  ["Acre","ac",4046.8564224],["Square mile","mi²",2589988.110336],["Barn","b",1e-28],
+  ["Rood","rood",1011.7141],["Section","section",2589988.11],["Township","twp",93239571.5]
+]},
+{ name: "Volume", units: [
+  ["Cubic millimeter","mm³",1e-9],["Cubic centimeter","cm³",1e-6],["Milliliter","mL",1e-6],
+  ["Centiliter","cL",1e-5],["Liter","L",1e-3],["Cubic meter","m³",1],
+  ["Cubic inch","in³",1.6387064e-5],["Cubic foot","ft³",0.028316846592],
+  ["Cubic yard","yd³",0.764554857984],["US teaspoon","tsp",4.92892159375e-6],
+  ["US tablespoon","tbsp",1.478676478125e-5],["US fluid ounce","fl oz",2.95735295625e-5],
+  ["US cup","cup",2.365882365e-4],["US pint","pt",4.73176473e-4],["US quart","qt",9.46352946e-4],
+  ["US gallon","gal",3.785411784e-3],["Imperial fluid ounce","imp fl oz",2.84130625e-5],
+  ["Imperial pint","imp pt",5.6826125e-4],["Imperial quart","imp qt",1.1365225e-3],
+  ["Imperial gallon","imp gal",4.54609e-3],["Oil barrel","bbl",0.158987294928],
+  ["Acre-foot","ac·ft",1233.48183754752],["Bushel (US)","bu",0.03523907016688],
+  ["Peck (US)","pk",8.80976754172e-3],["Hogshead","hhd",0.238480942392],
+  ["Cord (firewood)","cd",3.624556363776],["Board foot","FBM",2.359737216e-3]
+]},
+{ name: "Time", units: [
+  ["Nanosecond","ns",1e-9],["Microsecond","µs",1e-6],["Millisecond","ms",1e-3],
+  ["Second","s",1],["Minute","min",60],["Hour","h",3600],["Day","d",86400],
+  ["Week","wk",604800],["Fortnight","fn",1209600],["Month (30.44 d)","mo",2629746],
+  ["Year (365.25 d)","yr",31557600],["Decade","dec",315576000],["Century","c",3155760000],
+  ["Millennium","kyr",31557600000]
+]},
+{ name: "Speed", units: [
+  ["Meter/second","m/s",1],["Kilometer/hour","km/h",1/3.6],["Mile/hour","mph",0.44704],
+  ["Foot/second","ft/s",0.3048],["Inch/second","in/s",0.0254],["Knot","kn",0.5144444444444445],
+  ["Mach (sea level)","Ma",340.29],["Speed of light","c",299792458],["Kilometer/second","km/s",1000]
+]},
+{ name: "Acceleration", units: [
+  ["Meter/second²","m/s²",1],["Foot/second²","ft/s²",0.3048],
+  ["Inch/second²","in/s²",0.0254],["Galileo","Gal",0.01],["Milligalileo","mGal",1e-5],
+  ["Standard gravity","g₀",9.80665],["Kilometer/hour/second","km/h/s",0.2777778]
+]},
+{ name: "Force", units: [
+  ["Newton","N",1],["Kilonewton","kN",1000],["Meganewton","MN",1e6],["Dyne","dyn",1e-5],
+  ["Kilogram-force","kgf",9.80665],["Pound-force","lbf",4.4482216152605],
+  ["Ounce-force","ozf",0.27801385095378],["Poundal","pdl",0.138254954376],
+  ["Kip","kip",4448.2216152605],["Sthene","sn",1000],["Ton-force (metric)","tf",9806.65],
+  ["Ton-force (short)","tonf",8896.443230521],["Gram-force","gf",0.00980665]
+]},
+{ name: "Pressure", units: [
+  ["Pascal","Pa",1],["Hectopascal","hPa",100],["Kilopascal","kPa",1000],["Megapascal","MPa",1e6],
+  ["Gigapascal","GPa",1e9],["Bar","bar",1e5],["Millibar","mbar",100],["Atmosphere","atm",101325],
+  ["Technical atmosphere","at",98066.5],["Torr","Torr",101325/760],
+  ["Millimeter of mercury","mmHg",133.322387415],["Inch of mercury","inHg",3386.38815789],
+  ["Millimeter of water","mmH₂O",9.80665],["Inch of water","inH₂O",249.0889],
+  ["Foot of water","ftH₂O",2989.0669],["Pound/square inch","psi",6894.757293168],
+  ["Pound/square foot","psf",47.880258980335],["Kip/square inch","ksi",6894757.293168],
+  ["Barye","Ba",0.1]
+]},
+{ name: "Energy", units: [
+  ["Joule","J",1],["Kilojoule","kJ",1000],["Megajoule","MJ",1e6],["Gigajoule","GJ",1e9],
+  ["Calorie (thermochemical)","cal",4.184],["Calorie (IT)","cal_IT",4.1868],
+  ["Kilocalorie","kcal",4184],["Watt-hour","Wh",3600],["Kilowatt-hour","kWh",3.6e6],
+  ["Megawatt-hour","MWh",3.6e9],["Electronvolt","eV",1.602176634e-19],
+  ["British thermal unit","BTU",1055.05585262],["Therm","thm",1.05505585262e8],
+  ["Quad","quad",1.05505585262e18],["Foot-pound-force","ft·lb",1.3558179483314004],
+  ["Inch-pound-force","in·lb",0.1129848290276167],["Erg","erg",1e-7],
+  ["Ton of TNT","tTNT",4.184e9],["Horsepower-hour","hp·h",2.6845195e6]
+]},
+{ name: "Power", units: [
+  ["Watt","W",1],["Milliwatt","mW",1e-3],["Kilowatt","kW",1000],["Megawatt","MW",1e6],
+  ["Gigawatt","GW",1e9],["Horsepower (mechanical)","hp",745.6998715822702],
+  ["Horsepower (metric)","PS",735.49875],["Horsepower (electric)","hp(E)",746],
+  ["Horsepower (boiler)","bhp",9809.5],["BTU/hour","BTU/h",0.29307107017222],
+  ["BTU/second","BTU/s",1055.05585262],["Foot-pound-force/second","ft·lb/s",1.3558179483314004],
+  ["Calorie/second","cal/s",4.184],["Ton of refrigeration","TR",3516.8528420667]
+]},
+{ name: "Angle", units: [
+  ["Radian","rad",1],["Degree","°",Math.PI/180],["Gradian","grad",Math.PI/200],
+  ["Arcminute","′",Math.PI/10800],["Arcsecond","″",Math.PI/648000],
+  ["Turn (revolution)","turn",Math.PI*2],["Mil (NATO)","mil",Math.PI*2/6400]
+]},
+{ name: "Frequency", units: [
+  ["Hertz","Hz",1],["Kilohertz","kHz",1e3],["Megahertz","MHz",1e6],["Gigahertz","GHz",1e9],
+  ["Terahertz","THz",1e12],["Revolutions/minute","rpm",1/60],["Revolutions/second","rps",1],
+  ["Beats/minute","bpm",1/60]
+]},
+{ name: "Angular Velocity", units: [
+  ["Radian/second","rad/s",1],["Radian/minute","rad/min",1/60],
+  ["Degree/second","°/s",Math.PI/180],["Degree/minute","°/min",Math.PI/10800],
+  ["Revolution/second","rev/s",Math.PI*2],["Revolution/minute","rpm",Math.PI/30]
+]},
+{ name: "Angular Acceleration", units: [
+  ["Radian/second²","rad/s²",1],["Degree/second²","°/s²",Math.PI/180],
+  ["Revolution/second²","rev/s²",Math.PI*2],["Revolution/minute²","rpm/min",Math.PI/1800]
+]},
+{ name: "Angular Momentum", units: [
+  ["Kilogram·square meter/second","kg·m²/s",1],
+  ["Gram·square centimeter/second","g·cm²/s",1e-7],
+  ["Pound·square foot/second","lb·ft²/s",0.04214011],
+  ["Slug·square foot/second","slug·ft²/s",1.355818]
+]},
+{ name: "Digital Data", units: [
+  ["Bit","b",0.125],["Byte","B",1],["Kilobit","kb",125],["Megabit","Mb",125000],
+  ["Gigabit","Gb",1.25e8],["Terabit","Tb",1.25e11],["Kilobyte (10³)","kB",1e3],
+  ["Megabyte (10⁶)","MB",1e6],["Gigabyte (10⁹)","GB",1e9],["Terabyte (10¹²)","TB",1e12],
+  ["Petabyte (10¹⁵)","PB",1e15],["Kibibyte (2¹⁰)","KiB",1024],["Mebibyte (2²⁰)","MiB",1048576],
+  ["Gibibyte (2³⁰)","GiB",1073741824],["Tebibyte (2⁴⁰)","TiB",1099511627776]
+]},
+{ name: "Data Rate", units: [
+  ["Bit/second","bit/s",1],["Kilobit/second","kbit/s",1e3],["Megabit/second","Mbit/s",1e6],
+  ["Gigabit/second","Gbit/s",1e9],["Byte/second","B/s",8],["Kilobyte/second","kB/s",8e3],
+  ["Megabyte/second","MB/s",8e6],["Gigabyte/second","GB/s",8e9]
+]},
+{ name: "Volumetric Flow Rate", units: [
+  ["Cubic meter/second","m³/s",1],["Cubic meter/minute","m³/min",1/60],
+  ["Cubic meter/hour","m³/h",1/3600],["Cubic meter/day","m³/d",1/86400],
+  ["Liter/second","L/s",1e-3],["Liter/minute","L/min",1/60000],
+  ["Liter/hour","L/h",1/3600000],["Liter/day","L/d",1/86400000],
+  ["Milliliter/second","mL/s",1e-6],["Cubic centimeter/second","cm³/s",1e-6],
+  ["Cubic millimeter/second","mm³/s",1e-9],
+  ["Cubic foot/second","ft³/s",0.028316846592],
+  ["Cubic foot/minute","cfm",0.028316846592/60],
+  ["Cubic foot/hour","ft³/h",0.028316846592/3600],
+  ["Cubic inch/second","in³/s",1.6387064e-5],
+  ["Cubic inch/minute","in³/min",1.6387064e-5/60],
+  ["US gallon/second","gal/s",3.785411784e-3],
+  ["US gallon/minute","gpm",3.785411784e-3/60],
+  ["US gallon/hour","gph",3.785411784e-3/3600],
+  ["US gallon/day","gpd",3.785411784e-3/86400],
+  ["Imperial gallon/second","imp gal/s",4.54609e-3],
+  ["Imperial gallon/minute","imp gpm",4.54609e-3/60],
+  ["US barrel (oil)/second","bbl/s",0.158987294928],
+  ["US barrel (oil)/minute","bbl/min",0.158987294928/60],
+  ["US barrel (oil)/hour","bbl/h",0.158987294928/3600],
+  ["US barrel (oil)/day","bbl/d",0.158987294928/86400],
+  ["Acre-foot/second","ac·ft/s",1233.48183754752],
+  ["Acre-foot/day","ac·ft/d",1233.48183754752/86400],
+  ["Cubic yard/second","yd³/s",0.764554857984],
+  ["Million gallon/day","MGD",3.785411784e-3*1e6/86400]
+]},
+{ name: "Mass Flow Rate", units: [
+  ["Kilogram/second","kg/s",1],["Kilogram/minute","kg/min",1/60],
+  ["Kilogram/hour","kg/h",1/3600],["Kilogram/day","kg/d",1/86400],
+  ["Gram/second","g/s",1e-3],["Gram/minute","g/min",1e-3/60],
+  ["Tonne (metric)/second","t/s",1000],["Tonne (metric)/hour","t/h",1000/3600],
+  ["Tonne (metric)/day","t/d",1000/86400],
+  ["Pound/second","lb/s",0.45359237],["Pound/minute","lb/min",0.45359237/60],
+  ["Pound/hour","lb/h",0.45359237/3600],["Pound/day","lb/d",0.45359237/86400],
+  ["Ounce/second","oz/s",0.028349523125],["Ounce/hour","oz/h",0.028349523125/3600],
+  ["Slug/second","slug/s",14.5939029372],["Slug/hour","slug/h",14.5939029372/3600],
+  ["US ton (short)/hour","ton/h",907.18474/3600],
+  ["UK ton (long)/hour","long ton/h",1016.0469088/3600],
+  ["Grain/second","gr/s",6.479891e-5],["Grain/hour","gr/h",6.479891e-5/3600]
+]},
+{ name: "Molar Flow Rate", units: [
+  ["Mole/second","mol/s",1],["Mole/minute","mol/min",1/60],
+  ["Mole/hour","mol/h",1/3600],["Mole/day","mol/d",1/86400],
+  ["Kilomole/second","kmol/s",1000],["Kilomole/hour","kmol/h",1000/3600],
+  ["Pound-mole/second","lbmol/s",453.59237],["Pound-mole/hour","lbmol/h",453.59237/3600]
+]},
+{ name: "Mass Flux", units: [
+  ["Kilogram/second-square meter","kg/(s·m²)",1],
+  ["Gram/second-square centimeter","g/(s·cm²)",10],
+  ["Pound/second-square foot","lb/(s·ft²)",4.882427636],
+  ["Pound/hour-square foot","lb/(h·ft²)",4.882427636/3600]
+]},
+{ name: "Surface Tension", units: [
+  ["Newton/meter","N/m",1],["Millinewton/meter","mN/m",1e-3],
+  ["Dyne/centimeter","dyn/cm",1e-3],
+  ["Pound-force/foot","lbf/ft",14.5939029372],
+  ["Pound-force/inch","lbf/in",175.126835246],
+  ["Poundal/foot","pdl/ft",0.45359237],
+  ["Erg/square centimeter","erg/cm²",1e-3]
+]},
+{ name: "Specific Weight", units: [
+  ["Newton/cubic meter","N/m³",1],["Kilonewton/cubic meter","kN/m³",1000],
+  ["Kilogram-force/cubic meter","kgf/m³",9.80665],
+  ["Pound-force/cubic foot","lbf/ft³",157.087463606],
+  ["Pound-force/cubic inch","lbf/in³",271447.09]
+]},
+{ name: "Permeability", units: [
+  ["Square meter","m²",1],["Square micrometer","µm²",1e-12],
+  ["Darcy","D",9.869233e-13],["Millidarcy","mD",9.869233e-16]
+]},
+{ name: "Compressibility", units: [
+  ["Per pascal","1/Pa",1],["Per kilopascal","1/kPa",1e-3],
+  ["Per megapascal","1/MPa",1e-6],["Per bar","1/bar",1e-5],
+  ["Per atmosphere","1/atm",9.86923267e-6]
+]},
+{ name: "Bulk Modulus", units: [
+  ["Pascal","Pa",1],["Kilopascal","kPa",1000],["Megapascal","MPa",1e6],
+  ["Gigapascal","GPa",1e9],["Bar","bar",1e5],
+  ["Pound/square inch","psi",6894.757293168]
+]},
+{ name: "Momentum", units: [
+  ["Kilogram·meter/second","kg·m/s",1],
+  ["Gram·centimeter/second","g·cm/s",1e-5],
+  ["Pound·foot/second","lb·ft/s",0.138254954376],
+  ["Newton·second","N·s",1],["Dyne·second","dyn·s",1e-5]
+]},
+{ name: "Hydraulic Conductivity", units: [
+  ["Meter/second","m/s",1],["Centimeter/second","cm/s",1e-2],
+  ["Foot/second","ft/s",0.3048],["Meter/day","m/d",1.157407407e-5],
+  ["Foot/day","ft/d",3.527777778e-6]
+]},
+{ name: "Transmissivity", units: [
+  ["Square meter/second","m²/s",1],["Square foot/second","ft²/s",0.09290304],
+  ["Square meter/day","m²/d",1.157407407e-5],
+  ["Square foot/day","ft²/d",1.07639104e-6]
+]},
+{ name: "Spring Stiffness", units: [
+  ["Newton/meter","N/m",1],["Newton/millimeter","N/mm",1000],
+  ["Kilonewton/meter","kN/m",1000],["Kilonewton/millimeter","kN/mm",1e6],
+  ["Pound-force/inch","lbf/in",175.1268],["Pound-force/foot","lbf/ft",14.59390],
+  ["Kilogram-force/meter","kgf/m",9.80665],["Kilogram-force/centimeter","kgf/cm",980.665],
+  ["Kilogram-force/millimeter","kgf/mm",9806.65],["Dyne/centimeter","dyn/cm",1e-3]
+]},
+{ name: "Damping Coefficient", units: [
+  ["Newton·second/meter","N·s/m",1],
+  ["Newton·second/millimeter","N·s/mm",1000],
+  ["Kilonewton·second/meter","kN·s/m",1000],
+  ["Pound-force·second/inch","lbf·s/in",175.1268],
+  ["Pound-force·second/foot","lbf·s/ft",14.59390],
+  ["Kilogram-force·second/meter","kgf·s/m",9.80665],
+  ["Kilogram-force·second/centimeter","kgf·s/cm",980.665]
+]},
+{ name: "Rotational Stiffness", units: [
+  ["Newton·meter/radian","N·m/rad",1],
+  ["Newton·meter/degree","N·m/deg",57.29578],
+  ["Kilonewton·meter/radian","kN·m/rad",1000],
+  ["Pound-force·foot/radian","lbf·ft/rad",1.355818],
+  ["Pound-force·foot/degree","lbf·ft/deg",77.6802],
+  ["Pound-force·inch/radian","lbf·in/rad",0.1129848],
+  ["Kilogram-force·meter/radian","kgf·m/rad",9.80665]
+]},
+{ name: "Rotational Damping", units: [
+  ["Newton·meter·second/radian","N·m·s/rad",1],
+  ["Newton·meter·second/degree","N·m·s/deg",57.29578],
+  ["Pound-force·foot·second/radian","lbf·ft·s/rad",1.355818],
+  ["Pound-force·inch·second/radian","lbf·in·s/rad",0.1129848],
+  ["Kilogram-force·meter·second/radian","kgf·m·s/rad",9.80665]
+]},
+{ name: "Mass Moment of Inertia", units: [
+  ["Kilogram·square meter","kg·m²",1],
+  ["Kilogram·square centimeter","kg·cm²",1e-4],
+  ["Gram·square centimeter","g·cm²",1e-7],
+  ["Pound·square foot","lb·ft²",0.04214011],
+  ["Pound·square inch","lb·in²",2.926397e-4],
+  ["Ounce·square inch","oz·in²",1.82900e-5],
+  ["Slug·square foot","slug·ft²",1.355818],
+  ["Tonne (metric)·square meter","t·m²",1000]
+]},
+{ name: "Second Moment of Area", units: [
+  ["Meter⁴","m⁴",1],["Centimeter⁴","cm⁴",1e-8],["Millimeter⁴","mm⁴",1e-12],
+  ["Inch⁴","in⁴",4.162314e-7],["Foot⁴","ft⁴",8.630975e-3]
+]},
+{ name: "Section Modulus", units: [
+  ["Meter³","m³",1],["Centimeter³","cm³",1e-6],["Millimeter³","mm³",1e-9],
+  ["Inch³","in³",1.638706e-5],["Foot³","ft³",0.02831685]
+]},
+{ name: "Vibration Velocity", units: [
+  ["Meter/second","m/s",1],["Millimeter/second","mm/s",1e-3],
+  ["Micrometer/second","µm/s",1e-6],["Centimeter/second","cm/s",1e-2],
+  ["Inch/second","in/s",0.0254],["Foot/second","ft/s",0.3048],
+  ["Mil/second","mil/s",2.54e-5]
+]},
+{ name: "Vibration Acceleration", units: [
+  ["Meter/second²","m/s²",1],["Centimeter/second²","cm/s²",1e-2],
+  ["Millimeter/second²","mm/s²",1e-3],["Standard gravity","g",9.80665],
+  ["Milli-g","mg",9.80665e-3],["Foot/second²","ft/s²",0.3048],
+  ["Galileo","Gal",0.01],["Milligalileo","mGal",1e-5]
+]},
+{ name: "Sound Intensity", units: [
+  ["Watt/square meter","W/m²",1],["Milliwatt/square meter","mW/m²",1e-3],
+  ["Microwatt/square meter","µW/m²",1e-6],["Nanowatt/square meter","nW/m²",1e-9],
+  ["Picowatt/square meter","pW/m²",1e-12],["Watt/square centimeter","W/cm²",1e4],
+  ["Watt/square foot","W/ft²",10.76391],["Erg/second/square centimeter","erg/(s·cm²)",1e-3]
+]},
+{ name: "Refrigeration Capacity", units: [
+  ["Watt","W",1],["Kilowatt","kW",1000],["Megawatt","MW",1e6],
+  ["Ton of refrigeration","TR",3516.853],["BTU/hour","BTU/h",0.2930711],
+  ["BTU/minute","BTU/min",17.58426],["BTU/second","BTU/s",1055.056],
+  ["Kilocalorie/hour","kcal/h",1.163],["Horsepower (mechanical)","hp",745.6999]
+]},
+{ name: "Linear Mass Density", units: [
+  ["Kilogram/meter","kg/m",1],["Gram/meter","g/m",1e-3],
+  ["Gram/centimeter","g/cm",0.1],["Gram/millimeter","g/mm",1],
+  ["Kilogram/centimeter","kg/cm",100],["Pound/foot","lb/ft",1.488164],
+  ["Pound/inch","lb/in",17.8580],["Ounce/foot","oz/ft",0.0930100],
+  ["Tex (g/km)","tex",1e-6],["Denier","den",1.11111e-7]
+]},
+{ name: "Surface Mass Density", units: [
+  ["Kilogram/square meter","kg/m²",1],["Gram/square meter (gsm)","g/m²",1e-3],
+  ["Gram/square centimeter","g/cm²",10],
+  ["Pound/square foot","lb/ft²",4.882428],["Pound/square inch","lb/in²",703.0696],
+  ["Ounce/square yard","oz/yd²",0.0339057],["Ounce/square foot","oz/ft²",0.305152]
+]},
+{ name: "Specific Volume", units: [
+  ["Cubic meter/kilogram","m³/kg",1],["Liter/kilogram","L/kg",1e-3],
+  ["Cubic centimeter/gram","cm³/g",1e-3],
+  ["Cubic foot/pound","ft³/lb",0.06242796],["Cubic inch/pound","in³/lb",3.612729e-5]
+]},
+{ name: "Volumetric Heat Capacity", units: [
+  ["Joule/cubic meter-kelvin","J/(m³·K)",1],
+  ["Kilojoule/cubic meter-kelvin","kJ/(m³·K)",1000],
+  ["Calorie/cubic centimeter-°C","cal/(cm³·°C)",4.184e6],
+  ["BTU/cubic foot-°F","BTU/(ft³·°F)",67066.3]
+]},
+{ name: "Thermal Insulance (R-value)", units: [
+  ["Square meter-kelvin/watt","m²·K/W",1],
+  ["Square foot-°F-hour/BTU","ft²·°F·h/BTU",0.1761102],
+  ["Clo (clothing)","clo",0.155],["Tog (clothing)","tog",0.1]
+]},
+{ name: "Molar Concentration", units: [
+  ["Mole/cubic meter","mol/m³",1],["Mole/liter (M)","mol/L",1000],
+  ["Millimole/liter (mM)","mmol/L",1],["Micromole/liter (µM)","µmol/L",1e-3],
+  ["Nanomole/liter (nM)","nmol/L",1e-6],
+  ["Pound-mole/cubic foot","lbmol/ft³",16018.5]
+]},
+{ name: "Mass Concentration", units: [
+  ["Kilogram/cubic meter","kg/m³",1],["Gram/liter","g/L",1],
+  ["Gram/cubic meter","g/m³",1e-3],["Milligram/liter (ppm)","mg/L",1e-3],
+  ["Microgram/liter (ppb)","µg/L",1e-6],["Gram/cubic centimeter","g/cm³",1000],
+  ["Pound/cubic foot","lb/ft³",16.01846],["Pound/US gallon","lb/gal",119.8264]
+]},
+{ name: "Cutting Speed", units: [
+  ["Meter/minute","m/min",1],["Meter/second","m/s",60],
+  ["Millimeter/minute","mm/min",1e-3],
+  ["Foot/minute (SFM)","ft/min",0.3048],["Inch/minute","in/min",0.0254],
+  ["Kilometer/hour","km/h",16.66667],["Mile/hour","mph",26.8224]
+]},
+{ name: "Linear Feed Rate", units: [
+  ["Millimeter/minute","mm/min",1],["Millimeter/second","mm/s",60],
+  ["Meter/minute","m/min",1000],["Inch/minute (ipm)","in/min",25.4],
+  ["Inch/second","in/s",1524],["Foot/minute","ft/min",304.8]
+]},
+{ name: "Feed per Revolution", units: [
+  ["Millimeter/revolution","mm/rev",1],["Micrometer/revolution","µm/rev",1e-3],
+  ["Inch/revolution","in/rev",25.4],["Mil/revolution","mil/rev",0.0254]
+]},
+{ name: "Wear Rate (Specific)", units: [
+  ["Cubic millimeter/Newton-meter","mm³/(N·m)",1],
+  ["Cubic centimeter/Newton-meter","cm³/(N·m)",1000],
+  ["Cubic inch/pound-force-inch","in³/(lbf·in)",145040],
+  ["Cubic inch/pound-force-foot","in³/(lbf·ft)",12086.6],
+  ["Cubic millimeter/kilogram-force-meter","mm³/(kgf·m)",0.10197]
+]},
+{ name: "Surface Roughness (Ra)", units: [
+  ["Micrometer","µm",1],["Nanometer","nm",1e-3],["Millimeter","mm",1000],
+  ["Microinch","µin",0.0254],["Mil","mil",25.4],["Angstrom","Å",1e-4]
+]},
+{ name: "Specific Energy", units: [
+  ["Joule/kilogram","J/kg",1],["Kilojoule/kilogram","kJ/kg",1000],
+  ["Megajoule/kilogram","MJ/kg",1e6],["Calorie/gram","cal/g",4184],
+  ["Kilocalorie/kilogram","kcal/kg",4184],["BTU/pound","BTU/lb",2326.0],
+  ["Foot-pound/pound","ft·lb/lb",2.9890669]
+]},
+{ name: "Energy Density", units: [
+  ["Joule/cubic meter","J/m³",1],["Kilojoule/cubic meter","kJ/m³",1000],
+  ["Megajoule/cubic meter","MJ/m³",1e6],["Kilowatt-hour/cubic meter","kWh/m³",3.6e6],
+  ["Calorie/cubic centimeter","cal/cm³",4.184e6],["BTU/cubic foot","BTU/ft³",37258.9458]
+]},
+{ name: "Molar Energy", units: [
+  ["Joule/mole","J/mol",1],["Kilojoule/mole","kJ/mol",1000],
+  ["Calorie/mole","cal/mol",4.184],["Kilocalorie/mole","kcal/mol",4184],
+  ["Electronvolt/molecule","eV",96485.33212]
+]},
+{ name: "Entropy", units: [
+  ["Joule/kelvin","J/K",1],["Kilojoule/kelvin","kJ/K",1000],
+  ["Calorie/kelvin","cal/K",4.184],["Kilocalorie/kelvin","kcal/K",4184],
+  ["BTU/°F","BTU/°F",1899.1005]
+]},
+{ name: "Specific Entropy", units: [
+  ["Joule/kilogram-kelvin","J/(kg·K)",1],
+  ["Kilojoule/kilogram-kelvin","kJ/(kg·K)",1000],
+  ["Calorie/gram-°C","cal/(g·°C)",4184],
+  ["Kilocalorie/kilogram-°C","kcal/(kg·°C)",4184],
+  ["BTU/pound-°F","BTU/(lb·°F)",4186.8]
+]},
+{ name: "Molar Entropy", units: [
+  ["Joule/mole-kelvin","J/(mol·K)",1],
+  ["Kilojoule/mole-kelvin","kJ/(mol·K)",1000],
+  ["Calorie/mole-kelvin","cal/(mol·K)",4.184],
+  ["BTU/pound-mole-°F","BTU/(lbmol·°F)",4.184]
+]},
+{ name: "Molar Heat Capacity", units: [
+  ["Joule/mole-kelvin","J/(mol·K)",1],
+  ["Kilojoule/mole-kelvin","kJ/(mol·K)",1000],
+  ["Calorie/mole-°C","cal/(mol·°C)",4.184],
+  ["BTU/pound-mole-°F","BTU/(lbmol·°F)",4.184]
+]},
+{ name: "Thermal Resistance", units: [
+  ["Kelvin/watt","K/W",1],["Degree Celsius/watt","°C/W",1],
+  ["Degree Fahrenheit-hour/BTU","°F·h/BTU",1.89563424],
+  ["Kelvin-hour/kilocalorie","K·h/kcal",0.8598452]
+]},
+{ name: "Thermal Expansion Coefficient", units: [
+  ["Per kelvin","1/K",1],["Per degree Celsius","1/°C",1],
+  ["Per degree Fahrenheit","1/°F",1.8],["Per degree Rankine","1/°R",1.8]
+]},
+{ name: "Thermal Diffusivity", units: [
+  ["Square meter/second","m²/s",1],["Square centimeter/second","cm²/s",1e-4],
+  ["Square millimeter/second","mm²/s",1e-6],["Square foot/second","ft²/s",0.09290304],
+  ["Square foot/hour","ft²/h",2.58064e-5],["Square meter/hour","m²/h",1/3600]
+]},
+{ name: "Heat Flux Density", units: [
+  ["Watt/square meter","W/m²",1],["Kilowatt/square meter","kW/m²",1000],
+  ["Watt/square centimeter","W/cm²",1e4],
+  ["Calorie/second-square centimeter","cal/(s·cm²)",41840],
+  ["Kilocalorie/hour-square meter","kcal/(h·m²)",1.1622222],
+  ["BTU/hour-square foot","BTU/(h·ft²)",3.1545907]
+]},
+{ name: "Molar Mass", units: [
+  ["Kilogram/mole","kg/mol",1],["Gram/mole","g/mol",1e-3],
+  ["Kilogram/kilomole","kg/kmol",1e-3],["Pound/mole","lb/mol",0.45359237],
+  ["Pound/pound-mole","lb/lbmol",1e-3]
+]},
+{ name: "Density", units: [
+  ["Kilogram/cubic meter","kg/m³",1],["Gram/cubic centimeter","g/cm³",1000],
+  ["Gram/liter","g/L",1],["Kilogram/liter","kg/L",1000],
+  ["Pound/cubic foot","lb/ft³",16.01846337396],["Pound/cubic inch","lb/in³",27679.904710203],
+  ["Pound/US gallon","lb/gal",119.8264273169],["Ounce/cubic inch","oz/in³",1729.9940444],
+  ["Slug/cubic foot","slug/ft³",515.3788]
+]},
+{ name: "Torque", units: [
+  ["Newton-meter","N·m",1],["Kilonewton-meter","kN·m",1000],
+  ["Millinewton-meter","mN·m",1e-3],["Newton-centimeter","N·cm",0.01],
+  ["Newton-millimeter","N·mm",1e-3],
+  ["Pound-force foot","lbf·ft",1.3558179483314004],
+  ["Pound-force inch","lbf·in",0.1129848290276167],
+  ["Ounce-force inch","ozf·in",0.00706155183333],
+  ["Kilogram-force meter","kgf·m",9.80665],["Kilogram-force centimeter","kgf·cm",0.0980665],
+  ["Dyne-centimeter","dyn·cm",1e-7]
+]},
+{ name: "Dynamic Viscosity", units: [
+  ["Pascal-second","Pa·s",1],["Millipascal-second","mPa·s",1e-3],
+  ["Micropascal-second","µPa·s",1e-6],["Poise","P",0.1],["Centipoise","cP",1e-3],
+  ["Pound/foot-second","lb/(ft·s)",1.4881639436],
+  ["Pound/foot-hour","lb/(ft·h)",4.133788732e-4],
+  ["Pound-force·second/square foot","lbf·s/ft²",47.880258980335]
+]},
+{ name: "Kinematic Viscosity", units: [
+  ["Square meter/second","m²/s",1],["Square millimeter/second","mm²/s",1e-6],
+  ["Stokes","St",1e-4],["Centistokes","cSt",1e-6],
+  ["Square foot/second","ft²/s",0.09290304],["Square inch/second","in²/s",6.4516e-4]
+]},
+{ name: "Thermal Conductivity", units: [
+  ["Watt/meter-kelvin","W/(m·K)",1],["Kilowatt/meter-kelvin","kW/(m·K)",1000],
+  ["Calorie/second-cm-°C","cal/(s·cm·°C)",418.4],
+  ["Kilocalorie/hour-meter-°C","kcal/(h·m·°C)",1.163],
+  ["BTU/hour-foot-°F","BTU/(h·ft·°F)",1.7307346664],
+  ["BTU·inch/hour-ft²-°F","BTU·in/(h·ft²·°F)",0.1442278888]
+]},
+{ name: "Heat Transfer Coefficient", units: [
+  ["Watt/square meter-kelvin","W/(m²·K)",1],["Kilowatt/square meter-kelvin","kW/(m²·K)",1000],
+  ["Calorie/second-cm²-°C","cal/(s·cm²·°C)",41840],
+  ["Kilocalorie/hour-m²-°C","kcal/(h·m²·°C)",1.163],
+  ["BTU/hour-ft²-°F","BTU/(h·ft²·°F)",5.6782633411]
+]},
+{ name: "Specific Heat Capacity", units: [
+  ["Joule/kilogram-kelvin","J/(kg·K)",1],["Kilojoule/kilogram-kelvin","kJ/(kg·K)",1000],
+  ["Calorie/gram-°C","cal/(g·°C)",4184],["Kilocalorie/kilogram-°C","kcal/(kg·°C)",4184],
+  ["BTU/pound-°F","BTU/(lb·°F)",4186.8]
+]},
+{ name: "Electric Charge", units: [
+  ["Coulomb","C",1],["Millicoulomb","mC",1e-3],["Microcoulomb","µC",1e-6],
+  ["Nanocoulomb","nC",1e-9],["Ampere-hour","Ah",3600],["Milliampere-hour","mAh",3.6],
+  ["Faraday","F",96485.33212]
+]},
+{ name: "Electric Current", units: [
+  ["Ampere","A",1],["Milliampere","mA",1e-3],["Microampere","µA",1e-6],
+  ["Nanoampere","nA",1e-9],["Kiloampere","kA",1000]
+]},
+{ name: "Voltage", units: [
+  ["Volt","V",1],["Millivolt","mV",1e-3],["Microvolt","µV",1e-6],
+  ["Kilovolt","kV",1000],["Megavolt","MV",1e6]
+]},
+{ name: "Resistance", units: [
+  ["Ohm","Ω",1],["Milliohm","mΩ",1e-3],["Kiloohm","kΩ",1000],
+  ["Megaohm","MΩ",1e6],["Gigaohm","GΩ",1e9]
+]},
+{ name: "Conductance", units: [
+  ["Siemens","S",1],["Millisiemens","mS",1e-3],["Microsiemens","µS",1e-6],["Kilosiemens","kS",1000]
+]},
+{ name: "Capacitance", units: [
+  ["Farad","F",1],["Millifarad","mF",1e-3],["Microfarad","µF",1e-6],
+  ["Nanofarad","nF",1e-9],["Picofarad","pF",1e-12]
+]},
+{ name: "Inductance", units: [
+  ["Henry","H",1],["Millihenry","mH",1e-3],["Microhenry","µH",1e-6],["Nanohenry","nH",1e-9]
+]},
+{ name: "Magnetic Flux", units: [
+  ["Weber","Wb",1],["Milliweber","mWb",1e-3],["Microweber","µWb",1e-6],["Maxwell","Mx",1e-8]
+]},
+{ name: "Magnetic Flux Density", units: [
+  ["Tesla","T",1],["Millitesla","mT",1e-3],["Microtesla","µT",1e-6],["Gauss","G",1e-4]
+]},
+{ name: "Magnetic Field Strength", units: [
+  ["Ampere/meter","A/m",1],["Ampere-turn/meter","AT/m",1],["Oersted","Oe",79.5774715459]
+]},
+{ name: "Illuminance", units: [
+  ["Lux","lx",1],["Kilolux","klx",1000],["Foot-candle","fc",10.7639104167],
+  ["Phot","ph",10000],["Nox","nx",1e-3]
+]},
+{ name: "Luminous Intensity", units: [
+  ["Candela","cd",1],["Millicandela","mcd",1e-3],["Kilocandela","kcd",1000]
+]},
+{ name: "Luminous Flux", units: [
+  ["Lumen","lm",1],["Kilolumen","klm",1000]
+]},
+{ name: "Radioactivity", units: [
+  ["Becquerel","Bq",1],["Kilobecquerel","kBq",1e3],["Megabecquerel","MBq",1e6],
+  ["Gigabecquerel","GBq",1e9],["Curie","Ci",3.7e10],["Millicurie","mCi",3.7e7],
+  ["Microcurie","µCi",3.7e4],["Rutherford","Rd",1e6]
+]},
+{ name: "Absorbed Dose", units: [
+  ["Gray","Gy",1],["Milligray","mGy",1e-3],["Microgray","µGy",1e-6],["Rad","rad",0.01]
+]},
+{ name: "Equivalent Dose", units: [
+  ["Sievert","Sv",1],["Millisievert","mSv",1e-3],["Microsievert","µSv",1e-6],
+  ["Rem","rem",0.01],["Millirem","mrem",1e-5]
+]}
+];
+
+/* =========================================================
+   8. CONVERTER UI
+   ========================================================= */
+const catSel = document.getElementById("catSel");
+const fromUnit = document.getElementById("fromUnit");
+const convVal = document.getElementById("convVal");
+const convList = document.getElementById("convList");
+const unitSearch = document.getElementById("unitSearch");
+const unitGroupSel = document.getElementById("unitGroupSel");
+let curCat = 0, curFrom = 0;
+const UNIT_GROUPS = {
+  "Geometry & Motion": /Length|Area|Volume|Angle|Speed|Acceleration|Angular|Momentum|Moment|Section Modulus|Vibration|Cutting|Feed|Wear|Roughness/i,
+  "Mechanical & Fluids": /Force|Pressure|Torque|Viscosity|Density|Flow|Mass Flow|Mass Flux|Surface Tension|Specific Weight|Permeability|Compressibility|Bulk Modulus|Hydraulic|Transmissivity|Spring|Damping|Rotational|Refrigeration/i,
+  "Thermal & Energy": /Temperature|Energy|Power|Heat|Thermal|Entropy|Specific Energy|Molar Energy/i,
+  "Electrical & Magnetism": /Electrical|Electric Current|Voltage|Inductance|Magnetic/i,
+  "Chemistry & Materials": /Molar|Concentration|Specific Volume|Mass Concentration|Radioactivity/i,
+  "Time, Frequency & Data": /Time|Frequency|Digital|Data Rate/i,
+  "Light & Sound": /Illuminance|Sound/i,
+  "Other": /.*/
+};
+Object.keys(UNIT_GROUPS).forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;unitGroupSel.appendChild(o)});
+function categoryGroup(name){for(const [g,re] of Object.entries(UNIT_GROUPS)){if(g!=="Other"&&re.test(name))return g}return "Other"}
+function fillCategories(keep=true){
+  const prev=keep?catSel.value:""; const group=unitGroupSel.value;
+  const list=CATS.map((c,i)=>({c,i})).filter(x=>group==="all"||categoryGroup(x.c.name)===group);
+  catSel.innerHTML=list.map(x=>`<option value="${x.i}">${x.c.name}</option>`).join("");
+  if(list.some(x=>String(x.i)===prev))catSel.value=prev;
+  curCat=Number(catSel.value||list[0]?.i||0);fillUnits();renderConv();
+}
+fillCategories(false);
+function toBase(cat, idx, v) {
+  if (cat.special === "temp") return TEMP[idx].to(v);
+  return v * cat.units[idx][2];
+}
+function fromBase(cat, idx, v) {
+  if (cat.special === "temp") return TEMP[idx].from(v);
+  return v / cat.units[idx][2];
+}
+function fillUnits() {
+  const cat = CATS[curCat];
+  fromUnit.innerHTML = cat.units.map((u, i) => `<option value="${i}">${u[0]} (${u[1]})</option>`).join("");
+  curFrom = 0; fromUnit.value = "0";
+}
+function renderConv() {
+  const cat = CATS[curCat];
+  const raw = convVal.value.trim().replace(/,/g, "");
+  const v = parseFloat(raw);
+  const q = unitSearch.value.trim().toLowerCase();
+  const valid = raw !== "" && isFinite(v);
+  let base = 0;
+  if (valid) base = toBase(cat, curFrom, v);
+  let html = "";
+  cat.units.forEach((u, i) => {
+    const label = u[0], sym = u[1];
+    if (q && !(label.toLowerCase().includes(q) || sym.toLowerCase().includes(q))) return;
+    let out = "—";
+    if (valid) { const r = fromBase(cat, i, base); out = (isFinite(r) ? fmt(r) : "—"); }
+    html += `<div class="crow${i === curFrom ? " sel" : ""}" data-out="${out}">
+        <div class="cname">${label}<span class="csym">${sym}</span></div>
+        <div class="cval">${out}</div>
+      </div>`;
+  });
+  convList.innerHTML = html || '<div class="crow"><div class="cname">No units match your filter</div></div>';
+}
+catSel.addEventListener("change", () => { curCat = +catSel.value; unitSearch.value = ""; fillUnits(); renderConv(); });
+unitGroupSel.addEventListener("change",()=>{unitSearch.value="";fillCategories(false)});
+fromUnit.addEventListener("change", () => { curFrom = +fromUnit.value; renderConv(); });
+convVal.addEventListener("input", renderConv);
+unitSearch.addEventListener("input", renderConv);
+convList.addEventListener("click", e => {
+  const row = e.target.closest(".crow"); if (!row) return;
+  const val = row.dataset.out;
+  if (!val || val === "—") return;
+  const done = () => showToast("Copied: " + val);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(done).catch(done);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = val; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta); done();
+  }
+});
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1400);
+}
+
+/* =========================================================
+   9. CAS UI + SOLVER
+   ========================================================= */
+const casInput = document.getElementById("casInput");
+const casVar = document.getElementById("casVar");
+const casOutput = document.getElementById("casOutput");
+const casEcho = document.getElementById("casEcho");
+const casHist = document.getElementById("casHist");
+const casHistory = [];
+
+function pushCasHistory(op, input, output) {
+  casHistory.unshift({ op, input, output });
+  if (casHistory.length > 30) casHistory.pop();
+  renderCasHistory();
+}
+function renderCasHistory() {
+  if (!casHistory.length) { casHist.innerHTML = '<div class="empty">No operations yet</div>'; return; }
+  casHist.innerHTML = casHistory.map((h, i) =>
+    `<div class="hrow" data-i="${i}">
+       <span>${escapeHtml(h.op + ": " + h.input)}</span>
+       <span>${escapeHtml(h.output)}</span>
+     </div>`).join("");
+}
+casHist.addEventListener("click", e => {
+  const row = e.target.closest(".hrow"); if (!row) return;
+  const h = casHistory[+row.dataset.i]; if (!h) return;
+  casInput.value = h.input;
+  setCasResult(h.output, false);
+  casEcho.textContent = h.op;
+  setSolutionStatus(h.op + " · loaded from history", "");
+});
+function algebraMarkup(text) {
+  return escapeHtml(String(text))
+    .replace(/([A-Za-zπθ][A-Za-z0-9πθ]*)\^(-?\d+)/g, "$1<sup>$2</sup>")
+    .replace(/\b(sin|cos|tan|ln|log|sqrt|exp|abs)\b/g, '<span class="mathop">$1</span>')
+    .replace(/\*/g, " · ")
+    .replace(/\bpi\b/g,"π");
+}
+
+let lastCasResultText = "";
+function setCasResult(text, isErr) {
+  lastCasResultText = String(text == null ? "" : text);
+  casOutput.innerHTML = algebraMarkup(lastCasResultText);
+  casOutput.classList.toggle("err", !!isErr);
+}
+function getVar() { return (casVar.value || "x").trim().toLowerCase() || "x"; }
+
+/* =========================================================
+   9b. SOLUTION BOX + HIDDEN PLOT ENGINE
+   ========================================================= */
+const solutionCanvas = document.getElementById("solutionCanvas");
+const solutionPlotWrap = document.getElementById("solutionPlotWrap");
+const solutionPlotNote = document.getElementById("solutionPlotNote");
+const solStatus = document.getElementById("solStatus");
+const solResetViewBtn = document.getElementById("solResetViewBtn");
+
+let solutionMode = null;
+
+function setSolutionStatus(text, kind) {
+  if (!solStatus) return;
+  solStatus.textContent = text;
+  solStatus.className = "sol-status" + (kind ? " " + kind : "");
+}
+
+function mirrorToSolution(srcCanvas, note, mode) {
+  if (!solutionCanvas || !srcCanvas || !srcCanvas.width) return;
+  const w = solutionCanvas.width, h = solutionCanvas.height;
+  const ctx = solutionCanvas.getContext("2d");
+  ctx.fillStyle = "#0a0f16";
+  ctx.fillRect(0, 0, w, h);
+  const ar = srcCanvas.width / srcCanvas.height;
+  let dw = w, dh = w / ar;
+  if (dh > h) { dh = h; dw = h * ar; }
+  try { ctx.drawImage(srcCanvas, (w - dw) / 2, (h - dh) / 2, dw, dh); } catch (_) {}
+  if (solutionPlotWrap) solutionPlotWrap.hidden = false;
+  if (solutionPlotNote) solutionPlotNote.textContent = note || "";
+  solutionMode = mode || null;
+  solutionCanvas.classList.toggle("mode3d", solutionMode === "3d");
+  if (solResetViewBtn) solResetViewBtn.hidden = !solutionMode;
+}
+
+function setCasTable(v, rows) {
+  const head = '<tr><th>' + escapeHtml(v) + '</th><th>f(' + escapeHtml(v) + ')</th></tr>';
+  const body = rows.map(r =>
+    '<tr><td>' + escapeHtml(r[0]) + '</td><td>' + escapeHtml(r[1]) + '</td></tr>').join("");
+  casOutput.innerHTML = '<table class="sol-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
+  casOutput.classList.remove("err");
+  lastCasResultText = "";
+}
+
+/* ---------- ADDED: clear solution box + plot ------------- */
+function clearSolutionBox() {
+  // Reset text of the solution output
+  casOutput.innerHTML = "Ready — enter an expression or equation above";
+  casOutput.classList.remove("err");
+  casEcho.textContent = "";
+  lastCasResultText = "";
+
+  // Hide the plot and reset its view state
+  solutionPlotWrap.hidden = true;
+  solutionPlotNote.textContent = "";
+  solutionMode = null;
+  solutionCanvas.classList.remove("mode3d");
+  solResetViewBtn.hidden = true;
+  const ctx = solutionCanvas.getContext("2d");
+  ctx.clearRect(0, 0, solutionCanvas.width, solutionCanvas.height);
+
+  // Show a distinct "editing" status
+  setSolutionStatus("Editing — the solution will update when you run a tool", "edit");
+}
+/* --------------------------------------------------------- */
+
+function copyTextToClipboard(text) {
+  const done = () => showToast("Copied");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(done);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta); done();
+  }
+}
+
+/* =========================================================
+   9c. SOLVER + TOOLS
+   ========================================================= */
+function parseEquation(src) {
+  const parts = src.split("=").map(s => s.trim());
+  if (parts.length === 1) return { lhs: casParse(parts[0]), rhs: null };
+  if (parts.length === 2) return { lhs: casParse(parts[0]), rhs: casParse(parts[1]) };
+  throw new Error("Only one '=' allowed");
+}
+
+function doCas(op) {
+  const src = casInput.value.trim();
+  if (op === "clear") {
+    casHistory.length = 0; renderCasHistory();
+    clearSolutionBox();
+    setSolutionStatus("History cleared", "ok");
+    return;
+  }
+  if (!src) { setCasResult("⚠ Enter an expression", true); setSolutionStatus("Nothing to evaluate", "err"); return; }
+  const v = getVar();
+  casEcho.textContent = op + "  ·  " + src;
+  setSolutionStatus(op + " …", "busy");
+
+  let eq;
+  try { eq = parseEquation(src); }
+  catch (e) { setCasResult("⚠ Parse error: " + e.message, true); setSolutionStatus("Parse error", "err"); return; }
+
+  let resultText = "";
+  try {
+    if (op === "solve") {
+      const rhs = eq.rhs || { t: "num", v: 0 };
+      const f = simplify({ t: "sub", l: eq.lhs, r: rhs });
+      const poly = extractPoly(f, v);
+      if (poly) {
+        const r = solvePoly(poly, v);
+        if (r) { resultText = r; }
+        else {
+          const fn = x => evalNode(f, { [v]: x });
+          const roots = findRoots(fn, -30, 30, 6000);
+          resultText = roots.length
+            ? roots.map(r => v + " ≈ " + fmt(r)).join("  or  ")
+            : "No roots found in [-30, 30]";
+        }
+      } else {
+        const fn = x => {
+          try { const y = evalNode(f, { [v]: x }); return (typeof y === "number" && isFinite(y)) ? y : NaN; }
+          catch (_) { return NaN; }
+        };
+        const roots = findRoots(fn, -30, 30, 6000);
+        if (!roots.length) {
+          resultText = "No roots found in [-30, 30]";
+        } else if (roots.length === 1) {
+          resultText = v + " ≈ " + fmt(roots[0]);
+        } else {
+          resultText = roots.slice(0, 8).map(r => v + " ≈ " + fmt(r)).join("  or  ");
+          if (roots.length > 8) resultText += "  …(+" + (roots.length - 8) + " more)";
+        }
+      }
+    } else if (op === "simplify") {
+      const s = simplify(eq.lhs);
+      resultText = nodeToString(s);
+    } else if (op === "expand") {
+      const s = expand(eq.lhs);
+      resultText = nodeToString(s);
+    } else if (op === "factor") {
+      const s = factorSimple(eq.lhs, v);
+      resultText = s ? nodeToString(s) : "Cannot factor " + nodeToString(simplify(eq.lhs));
+    } else if (op === "diff") {
+      const d = simplify(diff(eq.lhs, v));
+      resultText = "d/d" + v + " [" + nodeToString(simplify(eq.lhs)) + "] = " + nodeToString(d);
+    } else if (op === "diff2") {
+      const f0 = simplify(eq.lhs);
+      const d2 = simplify(diff(diff(f0, v), v));
+      resultText = "d²/d" + v + "² [" + nodeToString(f0) + "] = " + nodeToString(d2);
+    } else if (op === "integrate") {
+      const anti = integrateBasic(eq.lhs, v);
+      resultText = anti ? "∫(" + nodeToString(eq.lhs) + ") d" + v + " = " + nodeToString(anti) + " + C" : "Integration rule not available for this expression yet";
+    } else if (op === "table") {
+      const f0 = eq.rhs ? simplify({ t: "sub", l: eq.lhs, r: eq.rhs }) : simplify(eq.lhs);
+      const rows = [];
+      for (let k = -5; k <= 5; k++) {
+        let val;
+        try { val = fmt(evalNode(f0, { [v]: k })); } catch (_) { val = "—"; }
+        rows.push([String(k), val]);
+      }
+      setCasTable(v, rows);
+      pushCasHistory("table", src, "table for " + v + " from −5 to 5");
+      setSolutionStatus("Table of values ready", "ok");
+      return;
+    } else if (op === "eval") {
+      const raw = prompt("Value for " + v + " =", "1");
+      if (raw === null) { setSolutionStatus("Cancelled", ""); return; }
+      const val = parseFloat(raw);
+      if (!isFinite(val)) { setCasResult("⚠ Invalid value", true); setSolutionStatus("Invalid value", "err"); return; }
+      const num = evalNode(eq.lhs, { [v]: val });
+      resultText = "f(" + v + "=" + fmt(val) + ") = " + fmt(num);
+    }
+    setCasResult(resultText, false);
+    pushCasHistory(op, src, resultText);
+    setSolutionStatus(op + " · done", "ok");
+  } catch (e) {
+    setCasResult("⚠ " + e.message, true);
+    setSolutionStatus("Error: " + e.message, "err");
+  }
+}
+
+function integrateBasic(n, v) {
+  if (!n) return null;
+  if (n.t === "num") return {t:"mul",l:n,r:{t:"var",n:v}};
+  if (n.t === "var" && n.n === v) return {t:"div",l:{t:"pow",l:{t:"var",n:v},r:{t:"num",v:2}},r:{t:"num",v:2}};
+  if (n.t === "var") return {t:"mul",l:n,r:{t:"var",n:v}};
+  if (n.t === "add" || n.t === "sub") { const l=integrateBasic(n.l,v), r=integrateBasic(n.r,v); return l&&r?{t:n.t,l,r}:null; }
+  if (n.t === "pow" && n.l.t === "var" && n.l.n===v && n.r.t === "num" && n.r.v !== -1) {
+    const p=n.r.v+1; return {t:"div",l:{t:"pow",l:{t:"var",n:v},r:{t:"num",v:p}},r:{t:"num",v:p}};
+  }
+  if (n.t === "call" && n.a && n.a.length===1 && n.a[0].t === "var" && n.a[0].n===v) {
+    if(n.n==="sin") return {t:"neg",e:{t:"call",n:"cos",a:n.a}};
+    if(n.n==="cos") return {t:"call",n:"sin",a:n.a};
+    if(n.n==="exp") return n;
+  }
+  if (n.t === "mul") {
+    if(n.l.t==="num"){const r=integrateBasic(n.r,v);return r?{t:"mul",l:n.l,r}:null;}
+    if(n.r.t==="num"){const l=integrateBasic(n.l,v);return l?{t:"mul",l,r:n.r}:null;}
+  }
+  return null;
+}
+
+function factorSimple(n, v) {
+  const s = simplify(expand(n));
+  const terms = [];
+  flattenAdd(s, 1, terms);
+  if (terms.length < 2) return null;
+
+  if (s.t === "sub" && s.l.t === "pow" && s.r.t === "pow") {
+    const a = s.l.l, b = s.r.l;
+    return { t: "mul", l: { t: "sub", l: a, r: b }, r: { t: "add", l: a, r: b } };
+  }
+  const p=extractPoly(s,v);
+  if(p && p.length===3 && Math.abs(p[2]-1e-12)>0 && Math.abs(p[2])>1e-12) {
+    const a=p[2], b=p[1], c=p[0];
+    if(Math.abs(a-1)<1e-10 && Math.abs(b-Math.round(b))<1e-10 && Math.abs(c-Math.round(c))<1e-10) {
+      const roots=[]; for(let r=-Math.max(1,Math.abs(c));r<=Math.max(1,Math.abs(c));r++){if(Math.abs(r*r+b*r+c)<1e-9)roots.push(r)}
+      if(roots.length>=2)return {t:"mul",l:{t:"add",l:{t:"var",n:v},r:{t:"num",v:-roots[0]}},r:{t:"add",l:{t:"var",n:v},r:{t:"num",v:-roots[1]}}};
+    }
+  }
+  return null;
+}
+
+document.querySelectorAll("[data-cas]").forEach(btn => {
+  btn.addEventListener("click", () => doCas(btn.dataset.cas));
+});
+
+/* Examples: set the expression, sync plot inputs, and clear the solution */
+document.querySelectorAll(".ex").forEach(el => {
+  el.addEventListener("click", () => {
+    casInput.value = el.dataset.ex;
+    clearSolutionBox();
+    syncStudioExpressions("cas");
+    casInput.focus();
+  });
+});
+
+casInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") { doCas("solve"); e.preventDefault(); }
+});
+
+/* ---------- ADDED: typing / pasting / deleting in the expression
+   box clears the solution and plot ---------- */
+casInput.addEventListener("input", clearSolutionBox);
+/* --------------------------------------------------------- */
+
+/* =========================================================
+   10. 2D PLOT
+   ========================================================= */
+const plotCanvas = document.getElementById("plotCanvas");
+const plot2dCtx = plotCanvas.getContext("2d");
+
+function draw2D() {
+  const src = document.getElementById("plotInput").value.trim();
+  const varName = (document.getElementById("plotVar").value || "x").trim().toLowerCase();
+  let xMin = parseFloat(document.getElementById("plotXMin").value);
+  let xMax = parseFloat(document.getElementById("plotXMax").value);
+  let yMin = parseFloat(document.getElementById("plotYMin").value);
+  let yMax = parseFloat(document.getElementById("plotYMax").value);
+  if (!isFinite(xMin)) xMin = -10;
+  if (!isFinite(xMax)) xMax = 10;
+  if (xMin >= xMax) { showToast("xMin must be < xMax"); return; }
+
+  let ast;
+  try { ast = casParse(src); }
+  catch (e) { showToast("Parse error: " + e.message); return; }
+
+  const W = plotCanvas.width, H = plotCanvas.height;
+  const ctx = plot2dCtx;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#0a0f16";
+  ctx.fillRect(0, 0, W, H);
+
+  const samples = [];
+  const N = W;
+  let yDataMin = Infinity, yDataMax = -Infinity;
+  const f = x => {
+    try {
+      const y = evalNode(ast, { [varName]: x });
+      return (typeof y === "number" && isFinite(y)) ? y : NaN;
+    } catch (_) { return NaN; }
+  };
+  for (let i = 0; i < N; i++) {
+    const x = xMin + (xMax - xMin) * i / (N - 1);
+    const y = f(x);
+    samples.push({ x, y });
+    if (isFinite(y)) {
+      if (y < yDataMin) yDataMin = y;
+      if (y > yDataMax) yDataMax = y;
+    }
+  }
+
+  if (!isFinite(yDataMin)) { showToast("No valid data"); return; }
+
+  if (!isFinite(yMin) || !isFinite(yMax)) {
+    const pad = (yDataMax - yDataMin) * 0.1 || 1;
+    yMin = yDataMin - pad;
+    yMax = yDataMax + pad;
+    document.getElementById("plotYMin").value = yMin.toFixed(3);
+    document.getElementById("plotYMax").value = yMax.toFixed(3);
+  }
+
+  const margin = { left: 60, right: 20, top: 20, bottom: 40 };
+  const pw = W - margin.left - margin.right;
+  const ph = H - margin.top - margin.bottom;
+
+  const toPx = x => margin.left + (x - xMin) / (xMax - xMin) * pw;
+  const toPy = y => margin.top + (1 - (y - yMin) / (yMax - yMin)) * ph;
+
+  ctx.strokeStyle = "#1f2733";
+  ctx.lineWidth = 1;
+  const stepX = niceStep(xMax - xMin, 10);
+  for (let x = Math.ceil(xMin/stepX)*stepX; x <= xMax; x += stepX) {
+    const px = toPx(x);
+    ctx.beginPath(); ctx.moveTo(px, margin.top); ctx.lineTo(px, margin.top + ph); ctx.stroke();
+    ctx.fillStyle = "#4c5b6e"; ctx.font = "11px monospace"; ctx.textAlign = "center";
+    ctx.fillText(x.toFixed(Math.max(0, -Math.log10(stepX))), px, margin.top + ph + 15);
+  }
+  const stepY = niceStep(yMax - yMin, 8);
+  for (let y = Math.ceil(yMin/stepY)*stepY; y <= yMax; y += stepY) {
+    const py = toPy(y);
+    ctx.beginPath(); ctx.moveTo(margin.left, py); ctx.lineTo(margin.left + pw, py); ctx.stroke();
+    ctx.fillStyle = "#4c5b6e"; ctx.font = "11px monospace"; ctx.textAlign = "right";
+    ctx.fillText(y.toFixed(Math.max(0, -Math.log10(stepY))), margin.left - 8, py + 4);
+  }
+
+  ctx.strokeStyle = "#3a4757";
+  ctx.lineWidth = 1.5;
+  if (yMin <= 0 && yMax >= 0) {
+    const py0 = toPy(0);
+    ctx.beginPath(); ctx.moveTo(margin.left, py0); ctx.lineTo(margin.left + pw, py0); ctx.stroke();
+  }
+  if (xMin <= 0 && xMax >= 0) {
+    const px0 = toPx(0);
+    ctx.beginPath(); ctx.moveTo(px0, margin.top); ctx.lineTo(px0, margin.top + ph); ctx.stroke();
+  }
+
+  ctx.strokeStyle = "#4c9aff";
+  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  let started = false;
+  for (let i = 0; i < samples.length; i++) {
+    const { x, y } = samples[i];
+    if (!isFinite(y)) { started = false; continue; }
+    const px = toPx(x), py = toPy(y);
+    if (py < margin.top - 200 || py > margin.top + ph + 200) { started = false; continue; }
+    if (!started) { ctx.beginPath(); ctx.moveTo(px, py); started = true; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  mirrorToSolution(plotCanvas,
+    "2D plot · f(" + varName + ") = " + src + "   ·   " + varName + " ∈ [" + fmt(xMin) + ", " + fmt(xMax) + "]",
+    "2d");
+}
+function niceStep(range, targetCount) {
+  const raw = range / targetCount;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  let step;
+  if (norm < 1.5) step = 1;
+  else if (norm < 3) step = 2;
+  else if (norm < 7) step = 5;
+  else step = 10;
+  return step * mag;
+}
+document.getElementById("plotInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") { draw2D(); e.preventDefault(); }
+});
+
+/* =========================================================
+   11. 3D PLOT
+   ========================================================= */
+const plot3Canvas = document.getElementById("plot3Canvas");
+const plot3Ctx = plot3Canvas.getContext("2d");
+let view3D = { azimuth: -0.6, elevation: 0.5, zoom: 1 };
+let drag3D = null;
+let lastF3D = null;
+
+function draw3D() {
+  const src = document.getElementById("plot3Input").value.trim();
+  const range = parseFloat(document.getElementById("plot3Range").value) || 5;
+  const resRaw = parseInt(document.getElementById("plot3Res").value) || 40;
+  const N = Math.max(10, Math.min(80, resRaw));
+
+  let ast;
+  try { ast = casParse(src); }
+  catch (e) { showToast("Parse error: " + e.message); return; }
+
+  lastF3D = { ast, range, N, src };
+  render3D();
+}
+
+function render3D() {
+  if (!lastF3D) return;
+  const { ast, range, N } = lastF3D;
+  const W = plot3Canvas.width, H = plot3Canvas.height;
+  const ctx = plot3Ctx;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#0a0f16";
+  ctx.fillRect(0, 0, W, H);
+
+  const zs = [];
+  let zMin = Infinity, zMax = -Infinity;
+  for (let i = 0; i <= N; i++) {
+    zs[i] = [];
+    for (let j = 0; j <= N; j++) {
+      const x = -range + 2 * range * i / N;
+      const y = -range + 2 * range * j / N;
+      let z;
+      try {
+        z = evalNode(ast, { x: x, y: y });
+        if (typeof z !== "number" || !isFinite(z)) z = null;
+      } catch (_) { z = null; }
+      zs[i][j] = z;
+      if (z !== null) {
+        if (z < zMin) zMin = z;
+        if (z > zMax) zMax = z;
+      }
+    }
+  }
+  if (!isFinite(zMin)) { showToast("No valid data"); return; }
+  const zRange = zMax - zMin || 1;
+  const zCenter = (zMin + zMax) / 2;
+
+  const az = view3D.azimuth, el = view3D.elevation, zoom = view3D.zoom;
+  const camDist = 4;
+
+  const camX = camDist * Math.cos(el) * Math.cos(az);
+  const camY = camDist * Math.cos(el) * Math.sin(az);
+  const camZ = camDist * Math.sin(el);
+
+  const flen = Math.sqrt(camX*camX + camY*camY + camZ*camZ);
+  const fwd = { x: -camX/flen, y: -camY/flen, z: -camZ/flen };
+  const worldUp = { x: 0, y: 0, z: 1 };
+  let right = {
+    x: fwd.y * worldUp.z - fwd.z * worldUp.y,
+    y: fwd.z * worldUp.x - fwd.x * worldUp.z,
+    z: fwd.x * worldUp.y - fwd.y * worldUp.x
+  };
+  let rlen = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
+  if (rlen < 1e-9) right = { x: 1, y: 0, z: 0 };
+  else { right.x /= rlen; right.y /= rlen; right.z /= rlen; }
+  const up = {
+    x: right.y * fwd.z - right.z * fwd.y,
+    y: right.z * fwd.x - right.x * fwd.z,
+    z: right.x * fwd.y - right.y * fwd.x
+  };
+
+  const scale = Math.min(W, H) * 0.32 * zoom;
+  const cx = W / 2, cy = H / 2;
+
+  function project(nx, ny, nz) {
+    const vx = nx - camX, vy = ny - camY, vz = nz - camZ;
+    const sx = vx * right.x + vy * right.y + vz * right.z;
+    const sy = vx * up.x + vy * up.y + vz * up.z;
+    const depth = vx * fwd.x + vy * fwd.y + vz * fwd.z;
+    return { sx: cx + sx * scale, sy: cy - sy * scale, depth };
+  }
+
+  const nrmXY = v => v / range;
+  const nrmZ = v => (v - zCenter) / (zRange / 2) * 0.6;
+
+  const quads = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      const z00 = zs[i][j], z10 = zs[i+1][j], z11 = zs[i+1][j+1], z01 = zs[i][j+1];
+      if (z00 === null || z10 === null || z11 === null || z01 === null) continue;
+
+      const x0 = -range + 2 * range * i / N, x1 = -range + 2 * range * (i+1) / N;
+      const y0 = -range + 2 * range * j / N, y1 = -range + 2 * range * (j+1) / N;
+
+      const p0 = project(nrmXY(x0), nrmXY(y0), nrmZ(z00));
+      const p1 = project(nrmXY(x1), nrmXY(y0), nrmZ(z10));
+      const p2 = project(nrmXY(x1), nrmXY(y1), nrmZ(z11));
+      const p3 = project(nrmXY(x0), nrmXY(y1), nrmZ(z01));
+
+      const depth = (p0.depth + p1.depth + p2.depth + p3.depth) / 4;
+      const avgZ = (z00 + z10 + z11 + z01) / 4;
+      quads.push({ p0, p1, p2, p3, depth, z: avgZ });
+    }
+  }
+
+  quads.sort((a, b) => b.depth - a.depth);
+
+  for (const q of quads) {
+    const t = (q.z - zMin) / zRange;
+    const hue = 240 - 240 * t;
+    ctx.fillStyle = `hsl(${hue}, 65%, ${35 + 25*t}%)`;
+    ctx.beginPath();
+    ctx.moveTo(q.p0.sx, q.p0.sy);
+    ctx.lineTo(q.p1.sx, q.p1.sy);
+    ctx.lineTo(q.p2.sx, q.p2.sy);
+    ctx.lineTo(q.p3.sx, q.p3.sy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = "rgba(76,154,255,0.35)";
+  ctx.lineWidth = 1.2;
+  const corners = [
+    [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+    [-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]
+  ].map(([x,y,z]) => project(x, y, z));
+  const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  for (const [a,b] of edges) {
+    ctx.beginPath();
+    ctx.moveTo(corners[a].sx, corners[a].sy);
+    ctx.lineTo(corners[b].sx, corners[b].sy);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "rgba(139,152,169,0.6)";
+  ctx.font = "11px monospace";
+  ctx.textAlign = "left";
+  ctx.fillText(`z ∈ [${fmt(zMin)}, ${fmt(zMax)}]`, 12, H - 12);
+  ctx.fillText(`view: az=${(az*180/Math.PI).toFixed(0)}°  el=${(el*180/Math.PI).toFixed(0)}°`, 12, H - 28);
+
+  mirrorToSolution(plot3Canvas,
+    "3D surface · z = " + (lastF3D.src || "") + "   ·   x,y ∈ [" + fmt(-range) + ", " + fmt(range) + "]   ·   drag to rotate",
+    "3d");
+}
+
+document.getElementById("plot3Zoom").addEventListener("input", e => {
+  view3D.zoom = parseFloat(e.target.value);
+  if (lastF3D) render3D();
+});
+document.getElementById("plot3Input").addEventListener("keydown", e => {
+  if (e.key === "Enter") { draw3D(); e.preventDefault(); }
+});
+
+/* =========================================================
+   11b. SOLUTION CANVAS INTERACTIVITY
+   ========================================================= */
+let solDrag3D = null;
+solutionCanvas.addEventListener("pointerdown", e => {
+  if (solutionMode !== "3d") return;
+  solutionCanvas.setPointerCapture(e.pointerId);
+  solDrag3D = { x: e.clientX, y: e.clientY };
+});
+solutionCanvas.addEventListener("pointermove", e => {
+  if (!solDrag3D || solutionMode !== "3d") return;
+  const dx = e.clientX - solDrag3D.x;
+  const dy = e.clientY - solDrag3D.y;
+  solDrag3D.x = e.clientX; solDrag3D.y = e.clientY;
+  view3D.azimuth += dx * 0.008;
+  view3D.elevation += dy * 0.008;
+  view3D.elevation = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, view3D.elevation));
+  render3D();
+});
+solutionCanvas.addEventListener("pointerup", () => { solDrag3D = null; });
+solutionCanvas.addEventListener("pointercancel", () => { solDrag3D = null; });
+solutionCanvas.addEventListener("wheel", e => {
+  if (solutionMode !== "3d") return;
+  e.preventDefault();
+  view3D.zoom *= (e.deltaY > 0 ? 0.92 : 1.08);
+  view3D.zoom = Math.max(0.2, Math.min(4, view3D.zoom));
+  render3D();
+}, { passive: false });
+
+/* =========================================================
+   12. CAS KEYBOARD
+   ========================================================= */
+document.querySelectorAll("[data-token]").forEach(el=>el.addEventListener("click",()=>{
+  const token=el.dataset.token, start=casInput.selectionStart??casInput.value.length, end=casInput.selectionEnd??start;
+  let insertText=token, cursorOffset=token.length;
+  if(/^[a-zA-Z][a-zA-Z0-9]*\(\)$/.test(token)) cursorOffset=token.length-1;
+  else if(/^[a-zA-Z][a-zA-Z0-9]*\(,\)$/.test(token)) { insertText=token.replace(",", ", "); cursorOffset=insertText.indexOf("(")+1; }
+  else if(token==="( )") { insertText="()"; cursorOffset=1; }
+  else if(token==="[ ]") { insertText="[]"; cursorOffset=1; }
+  else if(token==="1/()") { insertText="1/()"; cursorOffset=3; }
+  else if(token==="10^()") { insertText="10^()"; cursorOffset=4; }
+  else if(token==="e^()") { insertText="e^()"; cursorOffset=3; }
+  else if(token==="-()") { insertText="-()"; cursorOffset=2; }
+  casInput.setRangeText(insertText,start,end,"end"); casInput.focus();
+  const pos=start+cursorOffset; casInput.setSelectionRange(pos,pos);
+  clearSolutionBox();  // editing via keyboard also clears the solution
+}));
+
+document.querySelectorAll("#casKeyboard [data-action]").forEach(el => el.addEventListener("click", () => {
+  const act = el.dataset.action;
+  const start = casInput.selectionStart ?? casInput.value.length;
+  const end = casInput.selectionEnd ?? start;
+  if (act === "back") {
+    if (start !== end) casInput.setRangeText("", start, end, "end");
+    else if (start > 0) casInput.setRangeText("", start - 1, start, "end");
+  } else if (act === "clear") {
+    casInput.value = "";
+    casInput.setSelectionRange(0, 0);
+  }
+  casInput.focus();
+  clearSolutionBox();
+}));
+document.getElementById("casBackBtn").addEventListener("click", () => {
+  const start = casInput.selectionStart ?? casInput.value.length;
+  const end = casInput.selectionEnd ?? start;
+  if (start !== end) casInput.setRangeText("", start, end, "end");
+  else if (start > 0) casInput.setRangeText("", start - 1, start, "end");
+  casInput.focus();
+  clearSolutionBox();
+});
+document.getElementById("casClearBtn").addEventListener("click", () => {
+  casInput.value = "";
+  casInput.focus();
+  clearSolutionBox();
+});
+document.getElementById("casCopyExprBtn").addEventListener("click", () => {
+  if (!casInput.value.trim()) { showToast("Nothing to copy"); return; }
+  copyTextToClipboard(casInput.value.trim());
+});
+
+/* =========================================================
+   13. SOLUTION BOX BUTTONS
+   ========================================================= */
+document.getElementById("solCopyBtn").addEventListener("click", () => {
+  const text = (lastCasResultText || casOutput.textContent || "").trim();
+  if (!text) { showToast("Nothing to copy"); return; }
+  copyTextToClipboard(text);
+});
+document.getElementById("solHidePlotBtn").addEventListener("click", () => {
+  solutionPlotWrap.hidden = true;
+  setSolutionStatus("Plot hidden", "");
+});
+solResetViewBtn.addEventListener("click", () => {
+  if (solutionMode === "3d") {
+    view3D = { azimuth: -0.6, elevation: 0.5, zoom: 1 };
+    if (lastF3D) render3D(); else draw3D();
+    setSolutionStatus("3D view reset", "ok");
+  } else if (solutionMode === "2d") {
+    document.getElementById("plotXMin").value = "-10";
+    document.getElementById("plotXMax").value = "10";
+    document.getElementById("plotYMin").value = "";
+    document.getElementById("plotYMax").value = "";
+    draw2D();
+    setSolutionStatus("2D view reset", "ok");
+  }
+});
+
+/* =========================================================
+   14. EXPRESSION SYNC + PLOT-FROM-CAS BRIDGES
+   ========================================================= */
+function syncStudioExpressions(source){
+  if(source==="cas"){const e=casInput.value.trim();if(e){const rhs=e.split("=")[0].trim();document.getElementById("plotInput").value=rhs;document.getElementById("plot3Input").value=rhs.replace(/\b([a-zA-Z])\b/g,"$1");}}
+  else if(source==="2d"){const e=document.getElementById("plotInput").value.trim();casInput.value=e;document.getElementById("plot3Input").value=e;}
+  else if(source==="3d"){const e=document.getElementById("plot3Input").value.trim();casInput.value=e;document.getElementById("plotInput").value=e.replace(/\by\b/g,"0");}
+}
+casInput.addEventListener("change",()=>syncStudioExpressions("cas"));
+document.getElementById("plotInput").addEventListener("change",()=>syncStudioExpressions("2d"));
+document.getElementById("plot3Input").addEventListener("change",()=>syncStudioExpressions("3d"));
+
+function expressionForPlotFromCAS(kind) {
+  const source = casInput.value.trim();
+  if (!source) { showToast("Enter an expression in the main CAS box first"); casInput.focus(); return null; }
+  const parts = source.split("=").map(part => part.trim());
+  if (parts.length === 1) return source;
+  if (parts.length !== 2) { showToast("Only one equals sign is supported"); return null; }
+  const lhs = parts[0], rhs = parts[1];
+  if (kind === "2d" && /^(y|f\s*\(\s*x\s*\))$/i.test(lhs)) return rhs;
+  if (kind === "3d" && /^(z|f\s*\(\s*x\s*,\s*y\s*\))$/i.test(lhs)) return rhs;
+  return `((${lhs})-(${rhs}))`;
+}
+document.getElementById("casPlot2D").addEventListener("click", () => {
+  const expression = expressionForPlotFromCAS("2d");
+  if (expression === null) return;
+  document.getElementById("plotInput").value = expression;
+  document.getElementById("plotVar").value = getVar();
+  draw2D();
+  setSolutionStatus("2D plot · f(" + getVar() + ") = " + expression, "ok");
+  document.getElementById("solutionBox").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+document.getElementById("casPlot3D").addEventListener("click", () => {
+  const expression = expressionForPlotFromCAS("3d");
+  if (expression === null) return;
+  document.getElementById("plot3Input").value = expression;
+  draw3D();
+  setSolutionStatus("3D surface · z = " + expression, "ok");
+  document.getElementById("solutionBox").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+/* =========================================================
+   15. TABS + INIT
+   ========================================================= */
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t === tab));
+    const which = tab.dataset.tab;
+    document.getElementById("tab-calc").hidden = which !== "calc";
+    document.getElementById("tab-conv").hidden = which !== "conv";
+    document.getElementById("tab-studio").hidden = which !== "studio";
+  });
+});
+
+/* Calculator modes */
+function updateProgrammer() {
+  const input=document.getElementById("progValue"), baseSel=document.getElementById("progBase"), out=document.getElementById("progResults");
+  if(!input||!out)return;
+  const raw=input.value.trim(); let n;
+  try {
+    if(/^[-+]?0x[\da-f]+$/i.test(raw)) n=BigInt(raw);
+    else if(/^[-+]?0b[01]+$/i.test(raw)) n=BigInt(raw);
+    else if(/^[-+]?0o[0-7]+$/i.test(raw)) n=BigInt(raw);
+    else n=BigInt(Math.trunc(Number(raw)));
+    if(raw===""||!/^[-+]?(?:0x[\da-f]+|0b[01]+|0o[0-7]+|\d+)$/i.test(raw)) throw Error();
+    const base=Number(baseSel.value);
+    out.innerHTML=["Decimal: "+n.toString(10),"Binary: "+n.toString(2),"Octal: "+n.toString(8),"Hexadecimal: 0x"+n.toString(16).toUpperCase()].map(x=>"<div>"+escapeHtml(x)+"</div>").join("");
+  } catch(_) {out.textContent="Enter a valid integer (decimal, 0b…, 0o… or 0x…).";}
+}
+function updateStatistics(){
+  const el=document.getElementById("statsValues"), out=document.getElementById("statsResults");
+  if(!el||!out)return;
+  const a=el.value.trim().split(/[\s,;]+/).filter(Boolean).map(Number);
+  if(!a.length||a.some(x=>!Number.isFinite(x))){out.textContent="Enter valid numbers separated by commas or spaces.";return;}
+  const sorted=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0), mean=sum/a.length;
+  const median=sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+  const variance=a.reduce((z,x)=>z+(x-mean)**2,0)/a.length;
+  const sampleVar=a.length>1?a.reduce((z,x)=>z+(x-mean)**2,0)/(a.length-1):NaN;
+  out.innerHTML=[`Count: ${a.length}`,`Sum: ${fmt(sum)}`,`Mean: ${fmt(mean)}`,`Median: ${fmt(median)}`,`Minimum: ${fmt(sorted[0])}`,`Maximum: ${fmt(sorted[sorted.length-1])}`,`Range: ${fmt(sorted[sorted.length-1]-sorted[0])}`,`Population standard deviation: ${fmt(Math.sqrt(variance))}`,`Sample standard deviation: ${Number.isFinite(sampleVar)?fmt(Math.sqrt(sampleVar)):"—"}`].map(x=>"<div>"+escapeHtml(x)+"</div>").join("");
+}
+document.querySelectorAll("[data-calcmode]").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll("[data-calcmode]").forEach(b=>b.classList.toggle("on",b===btn));
+  const mode=btn.dataset.calcmode;
+  document.getElementById("sciPad").hidden=mode==="basic";
+  document.getElementById("programmerPanel").hidden=mode!=="programmer";
+  document.getElementById("statisticsPanel").hidden=mode!=="statistics";
+  if(mode==="programmer")updateProgrammer(); if(mode==="statistics")updateStatistics();
+}));
+document.getElementById("progValue").addEventListener("input",updateProgrammer);
+document.getElementById("progBase").addEventListener("change",updateProgrammer);
+document.getElementById("statsValues").addEventListener("input",updateStatistics);
+updateProgrammer(); updateStatistics();
+
+updateDisplay();
+renderHistory();
+fillUnits();
+renderConv();
+convVal.value = "1";
+renderConv();
+renderCasHistory();
+</script>
+</body>
+</html>
