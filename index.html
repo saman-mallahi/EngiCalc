@@ -141,7 +141,6 @@ h1 b{color:var(--accent);font-weight:650}
 #tab-studio{margin-bottom:14px}
 #tab-studio > .conv-top, #tab-studio > .examples, #tab-studio > .modes, #tab-studio > .display, #tab-studio > .hist{margin-bottom:14px}
 
-/* ===== Math Studio — two-column layout with sidebar keyboard ===== */
 .studio-layout{display:flex;gap:14px;align-items:flex-start}
 .studio-main{flex:1 1 auto;min-width:0}
 .studio-side{
@@ -159,7 +158,6 @@ h1 b{color:var(--accent);font-weight:650}
 .studio-side .cas-keyboard{grid-template-columns:1fr;gap:8px;margin:0}
 .studio-side .kbd-group.keypad .kbd-keys{grid-template-columns:repeat(4,minmax(0,1fr))}
 
-/* ===== Math Studio — solution box, keypad, tables ===== */
 .sol-box{border:1px solid #60748c;border-radius:13px;background:linear-gradient(180deg,rgba(43,59,80,.42),rgba(24,34,49,.55));padding:13px;margin:14px 0}
 .sol-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .sol-title{font-size:13px;font-weight:700;letter-spacing:.35px;color:#e6f0ff;display:flex;align-items:center;gap:8px}
@@ -182,7 +180,6 @@ h1 b{color:var(--accent);font-weight:650}
 .sol-table th,.sol-table td{border:1px solid #52647a;padding:3px 14px;text-align:right;font-family:var(--mono)}
 .sol-table th{color:#cfe2ff;background:rgba(76,154,255,.12)}
 .sol-table td{color:#dfe9f5}
-/* ===== end added ===== */
 
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(16px);
   background:var(--accent);color:#06111f;padding:9px 20px;border-radius:24px;font-size:13px;
@@ -309,13 +306,10 @@ h1 b{color:var(--accent);font-weight:650}
     <div class="conv-list" id="convList"></div>
   </section>
 
-  <!-- ============================================================
-       MATH STUDIO
-       ============================================================ -->
+  <!-- MATH STUDIO -->
   <section class="panel" id="tab-studio" hidden>
     <div class="studio-layout">
 
-      <!-- ===== MAIN COLUMN ===== -->
       <div class="studio-main">
 
         <!-- EXPRESSION BOX -->
@@ -402,7 +396,7 @@ h1 b{color:var(--accent);font-weight:650}
         </div>
       </div>
 
-      <!-- ===== SIDEBAR: mathematical keyboard ===== -->
+      <!-- SIDEBAR KEYBOARD -->
       <aside class="studio-side" aria-label="Mathematical keyboard">
         <div class="section-card" id="casKeyboardCard">
           <div class="section-title">Mathematical keyboard</div>
@@ -436,7 +430,7 @@ h1 b{color:var(--accent);font-weight:650}
         </div>
       </aside>
 
-    </div><!-- /.studio-layout -->
+    </div>
 
     <!-- Hidden plot engine -->
     <div id="plotEngine" hidden aria-hidden="true" style="display:none">
@@ -513,7 +507,7 @@ function escapeHtml(s) {
 }
 
 /* =========================================================
-   2. TOKENIZER  (Unicode-friendly)
+   2. TOKENIZER
    ========================================================= */
 function normalizeMathInput(src) {
   return String(src)
@@ -882,28 +876,41 @@ function simplify(n) {
 
 function expand(n) {
   n = simplify(n);
-  if (n.t === "add" || n.t === "sub") return simplify({ t: n.t, l: expand(n.l), r: expand(n.r) });
+  if (n.t === "num" || n.t === "var" || n.t === "call") return n;
   if (n.t === "neg") return simplify({ t: "neg", e: expand(n.e) });
-  if (n.t === "mul") {
-    const l = expand(n.l), r = expand(n.r);
-    const ls = collectAdds(l), rs = collectAdds(r);
-    let result = null;
-    for (const lt of ls) for (const rt of rs) {
-      const prod = simplify({ t: "mul", l: lt, r: rt });
-      result = result ? simplify({ t: "add", l: result, r: prod }) : prod;
-    }
-    return result || { t: "num", v: 0 };
+  if (n.t === "add" || n.t === "sub") {
+    return simplify({ t: n.t, l: expand(n.l), r: expand(n.r) });
   }
-  if (n.t === "pow" && n.r.t === "num" && Number.isInteger(n.r.v) && n.r.v >= 0 && n.r.v <= 12) {
-    if (n.r.v === 0) return { t: "num", v: 1 };
-    if (n.r.v === 1) return expand(n.l);
+  if (n.t === "div") {
+    return simplify({ t: "div", l: expand(n.l), r: expand(n.r) });
+  }
+  if (n.t === "mul") {
+    return expandMul(expand(n.l), expand(n.r));
+  }
+  if (n.t === "pow") {
     const base = expand(n.l);
-    let r = base;
-    for (let i = 1; i < n.r.v; i++) r = expand({ t: "mul", l: r, r: base });
-    return r;
+    if (n.r.t === "num" && Number.isInteger(n.r.v) && n.r.v >= 0 && n.r.v <= 12) {
+      let result = { t: "num", v: 1 };
+      for (let i = 0; i < n.r.v; i++) result = expandMul(result, base);
+      return result;
+    }
+    return simplify({ t: "pow", l: base, r: expand(n.r) });
   }
   return n;
 }
+
+function expandMul(a, b) {
+  const as = collectAdds(a), bs = collectAdds(b);
+  let result = { t: "num", v: 0 };
+  for (const lt of as) {
+    for (const rt of bs) {
+      const prod = simplify({ t: "mul", l: lt, r: rt });
+      result = simplify({ t: "add", l: result, r: prod });
+    }
+  }
+  return result;
+}
+
 function collectAdds(n, sign) {
   sign = sign === undefined ? 1 : sign;
   if (n.t === "add") return [...collectAdds(n.l, sign), ...collectAdds(n.r, sign)];
@@ -1200,7 +1207,7 @@ document.addEventListener("keydown", e => {
 });
 
 /* =========================================================
-   7. UNIT DATABASE (unchanged)
+   7. UNIT DATABASE
    ========================================================= */
 const TEMP = [
   { to: v => v, from: v => v },
@@ -1937,15 +1944,12 @@ function setCasTable(v, rows) {
   lastCasResultText = "";
 }
 
-/* ---------- ADDED: clear solution box + plot ------------- */
 function clearSolutionBox() {
-  // Reset text of the solution output
   casOutput.innerHTML = "Ready — enter an expression or equation above";
   casOutput.classList.remove("err");
   casEcho.textContent = "";
   lastCasResultText = "";
 
-  // Hide the plot and reset its view state
   solutionPlotWrap.hidden = true;
   solutionPlotNote.textContent = "";
   solutionMode = null;
@@ -1954,10 +1958,8 @@ function clearSolutionBox() {
   const ctx = solutionCanvas.getContext("2d");
   ctx.clearRect(0, 0, solutionCanvas.width, solutionCanvas.height);
 
-  // Show a distinct "editing" status
   setSolutionStatus("Editing — the solution will update when you run a tool", "edit");
 }
-/* --------------------------------------------------------- */
 
 function copyTextToClipboard(text) {
   const done = () => showToast("Copied");
@@ -2098,32 +2100,124 @@ function integrateBasic(n, v) {
   return null;
 }
 
+/* -------------------------------------------------------------------
+   factorSimple — improved version.
+
+   Handles:
+   • Difference of squares           a² - b²  →  (a - b)(a + b)
+   • Monic quadratics with integer roots        x² + bx + c  →  (x - r1)(x - r2)
+   • Repeated-root quadratics (perfect squares) x² + 2x + 1  →  (x + 1)²
+   • Non-monic quadratics with integer roots    ax² + bx + c
+
+   The previous implementation only fired when the integer scan found
+   TWO distinct roots. For a double root (e.g. x² + 2x + 1 with roots
+   −1, −1) the scan only pushed the root once, so `roots.length >= 2`
+   failed and it returned null. Now a single root is treated as a
+   double root.
+   ------------------------------------------------------------------- */
 function factorSimple(n, v) {
   const s = simplify(expand(n));
-  const terms = [];
-  flattenAdd(s, 1, terms);
-  if (terms.length < 2) return null;
 
+  // Difference of squares: a² − b²  →  (a − b)(a + b)
   if (s.t === "sub" && s.l.t === "pow" && s.r.t === "pow") {
     const a = s.l.l, b = s.r.l;
     return { t: "mul", l: { t: "sub", l: a, r: b }, r: { t: "add", l: a, r: b } };
   }
-  const p=extractPoly(s,v);
-  if(p && p.length===3 && Math.abs(p[2]-1e-12)>0 && Math.abs(p[2])>1e-12) {
-    const a=p[2], b=p[1], c=p[0];
-    if(Math.abs(a-1)<1e-10 && Math.abs(b-Math.round(b))<1e-10 && Math.abs(c-Math.round(c))<1e-10) {
-      const roots=[]; for(let r=-Math.max(1,Math.abs(c));r<=Math.max(1,Math.abs(c));r++){if(Math.abs(r*r+b*r+c)<1e-9)roots.push(r)}
-      if(roots.length>=2)return {t:"mul",l:{t:"add",l:{t:"var",n:v},r:{t:"num",v:-roots[0]}},r:{t:"add",l:{t:"var",n:v},r:{t:"num",v:-roots[1]}}};
+
+  const p = extractPoly(s, v);
+  if (!p) return null;
+
+  // Remove trailing zero coefficients
+  while (p.length > 1 && Math.abs(p[p.length - 1]) < 1e-12) p.pop();
+  const deg = p.length - 1;
+
+  // ── Quadratic  a·x² + b·x + c ────────────────────────────────────
+  if (deg === 2) {
+    let [c, b, a] = p;
+
+    // Factor out the leading coefficient as a common factor if it helps.
+    // e.g. 2x² + 4x + 2  =  2·(x + 1)²  — try integer-root factoring on
+    // the monic version first.
+    let leadingFactor = 1;
+    if (Math.abs(a - 1) > 1e-10 && Number.isInteger(a) && Math.abs(a) >= 1) {
+      // If a, b, c share a common integer factor, pull it out.
+      const g = gcd(gcd(Math.abs(Math.round(a)), Math.abs(Math.round(b))), Math.abs(Math.round(c)));
+      if (g > 1) {
+        leadingFactor = g;
+        a = a / g; b = b / g; c = c / g;
+      }
     }
+
+    // Integer-root scan for a·x² + b·x + c where a, b, c are (near) integers.
+    if (Math.abs(a - Math.round(a)) < 1e-10 &&
+        Math.abs(b - Math.round(b)) < 1e-10 &&
+        Math.abs(c - Math.round(c)) < 1e-10) {
+      const ai = Math.round(a), bi = Math.round(b), ci = Math.round(c);
+      const roots = [];
+      const limit = Math.max(1, Math.abs(ci)) * Math.max(1, Math.abs(ai));
+      for (let r = -limit; r <= limit; r++) {
+        if (r === 0) continue;
+        // r is a root of ai·x² + bi·x + ci when ai·r² + bi·r + ci = 0,
+        // which requires r | ci and ai·r² + bi·r + ci = 0.
+        if (ci % r === 0 && Math.abs(ai * r * r + bi * r + ci) < 1e-9) {
+          if (!roots.includes(r)) roots.push(r);
+        }
+      }
+      // For a monic with a double root, both roots are the same — accept
+      // one root as a double root when the discriminant vanishes.
+      const disc = bi * bi - 4 * ai * ci;
+      if (Math.abs(disc) < 1e-9 && roots.length === 1) {
+        const r = roots[0];
+        // Build (x - r)² or a·(x - r)²
+        const xMinusR = { t: "add", l: { t: "var", n: v }, r: { t: "num", v: -r } };
+        const sq = { t: "pow", l: xMinusR, r: { t: "num", v: 2 } };
+        return leadingFactor !== 1
+          ? { t: "mul", l: { t: "num", v: leadingFactor }, r: sq }
+          : sq;
+      }
+      if (roots.length >= 2) {
+        const r1 = roots[0], r2 = roots[1];
+        const f1 = { t: "add", l: { t: "var", n: v }, r: { t: "num", v: -r1 } };
+        const f2 = { t: "add", l: { t: "var", n: v }, r: { t: "num", v: -r2 } };
+        const prod = { t: "mul", l: f1, r: f2 };
+        if (leadingFactor !== 1) {
+          return { t: "mul", l: { t: "num", v: leadingFactor }, r: prod };
+        }
+        // If a ≠ 1 and we found two integer roots, the true factorization
+        // is a·(x - r1/a)(x - r2/a) — but we only reach this branch when
+        // the leading coefficient was 1 or was pulled out as `leadingFactor`.
+        return prod;
+      }
+    }
+
+    // Fall back: use the quadratic formula and only factor if the roots
+    // are nice rational numbers.
+    const disc = b * b - 4 * a * c;
+    if (disc >= -1e-14 && Math.abs(a) > 1e-12) {
+      const sq = Math.sqrt(Math.max(0, disc));
+      const r1 = (-b + sq) / (2 * a), r2 = (-b - sq) / (2 * a);
+      const isNice = x => Math.abs(x - Math.round(x * 2) / 2) < 1e-9;
+      if (isNice(r1) && isNice(r2)) {
+        const f1 = { t: "add", l: { t: "var", n: v }, r: { t: "num", v: -r1 } };
+        const f2 = { t: "add", l: { t: "var", n: v }, r: { t: "num", v: -r2 } };
+        return { t: "mul", l: f1, r: f2 };
+      }
+    }
+    return null;
   }
+
   return null;
+}
+
+function gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { const t = b; b = a % b; a = t; }
+  return a || 1;
 }
 
 document.querySelectorAll("[data-cas]").forEach(btn => {
   btn.addEventListener("click", () => doCas(btn.dataset.cas));
 });
-
-/* Examples: set the expression, sync plot inputs, and clear the solution */
 document.querySelectorAll(".ex").forEach(el => {
   el.addEventListener("click", () => {
     casInput.value = el.dataset.ex;
@@ -2132,15 +2226,10 @@ document.querySelectorAll(".ex").forEach(el => {
     casInput.focus();
   });
 });
-
 casInput.addEventListener("keydown", e => {
   if (e.key === "Enter") { doCas("solve"); e.preventDefault(); }
 });
-
-/* ---------- ADDED: typing / pasting / deleting in the expression
-   box clears the solution and plot ---------- */
 casInput.addEventListener("input", clearSolutionBox);
-/* --------------------------------------------------------- */
 
 /* =========================================================
    10. 2D PLOT
@@ -2475,7 +2564,7 @@ document.querySelectorAll("[data-token]").forEach(el=>el.addEventListener("click
   else if(token==="-()") { insertText="-()"; cursorOffset=2; }
   casInput.setRangeText(insertText,start,end,"end"); casInput.focus();
   const pos=start+cursorOffset; casInput.setSelectionRange(pos,pos);
-  clearSolutionBox();  // editing via keyboard also clears the solution
+  clearSolutionBox();
 }));
 
 document.querySelectorAll("#casKeyboard [data-action]").forEach(el => el.addEventListener("click", () => {
@@ -2591,7 +2680,6 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
-/* Calculator modes */
 function updateProgrammer() {
   const input=document.getElementById("progValue"), baseSel=document.getElementById("progBase"), out=document.getElementById("progResults");
   if(!input||!out)return;
@@ -2602,7 +2690,6 @@ function updateProgrammer() {
     else if(/^[-+]?0o[0-7]+$/i.test(raw)) n=BigInt(raw);
     else n=BigInt(Math.trunc(Number(raw)));
     if(raw===""||!/^[-+]?(?:0x[\da-f]+|0b[01]+|0o[0-7]+|\d+)$/i.test(raw)) throw Error();
-    const base=Number(baseSel.value);
     out.innerHTML=["Decimal: "+n.toString(10),"Binary: "+n.toString(2),"Octal: "+n.toString(8),"Hexadecimal: 0x"+n.toString(16).toUpperCase()].map(x=>"<div>"+escapeHtml(x)+"</div>").join("");
   } catch(_) {out.textContent="Enter a valid integer (decimal, 0b…, 0o… or 0x…).";}
 }
